@@ -51,3 +51,6 @@ export interface Topology {
 }
 
 export type HighlightMode = 'deps' | 'impact' | 'both';
+
+/** Live-Zustand eines Knotens, z. B. aus Health-Checks abgeleitet. */
+export type NodeStatus = 'ok' | 'down' | 'suspect' | 'unknown';

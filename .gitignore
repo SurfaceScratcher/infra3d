@@ -4,3 +4,4 @@ dist
 # Echte Infrastrukturdaten bleiben lokal
 infra3d.config.json
 src/data/local.json
+.vite
