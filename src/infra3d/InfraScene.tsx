@@ -70,16 +70,19 @@ export function InfraScene({
   const visible = (n: InfraNode | undefined) => !!n && !hidden.has(n.layer);
   const { bounds } = layout;
   const center: Vec3 = [(bounds.minX + bounds.maxX) / 2, ((topology.layers.length - 1) * (layoutOpts?.layerGap ?? 10)) / 2, (bounds.minZ + bounds.maxZ) / 2];
+  // Kameraabstand, Nebel und Zoomgrenze mit der Breite der Szene wachsen lassen,
+  // damit bei vielen Spalten alles im Bild und sichtbar bleibt.
+  const zoom = Math.max(1, (bounds.maxX - bounds.minX) / 110);
 
   return (
     <div className={className} style={{ position: 'relative', width: '100%', height: '100%', ...style }}>
-      <Canvas camera={{ position: [center[0] + 10, center[1] + 45, center[2] + 85], fov: 45, near: 0.5, far: 1000 }} onPointerMissed={() => onSelect?.(null)}>
+      <Canvas camera={{ position: [center[0] + 10, center[1] + 45 * zoom, center[2] + 85 * zoom], fov: 45, near: 0.5, far: 1000 }} onPointerMissed={() => onSelect?.(null)}>
         <color attach="background" args={[background]} />
-        <fog attach="fog" args={[background, 120, 260]} />
+        <fog attach="fog" args={[background, 120 * zoom, 260 * zoom]} />
         <ambientLight intensity={0.55} />
         <directionalLight position={[40, 80, 40]} intensity={1.1} />
 
-        <CameraRig selectedPos={selectedId ? layout.positions.get(selectedId) : undefined} center={center} />
+        <CameraRig selectedPos={selectedId ? layout.positions.get(selectedId) : undefined} center={center} zoom={zoom} />
 
         {topology.layers.map((l) =>
           hidden.has(l.id) ? null : (
@@ -136,7 +139,7 @@ function nodeState(id: string, h: Highlight | null): NodeState {
   return 'dim';
 }
 
-function CameraRig({ selectedPos, center }: { selectedPos?: Vec3; center: Vec3 }) {
+function CameraRig({ selectedPos, center, zoom = 1 }: { selectedPos?: Vec3; center: Vec3; zoom?: number }) {
   const ref = useRef<CameraControls>(null);
   useEffect(() => {
     const c = ref.current;
@@ -149,7 +152,7 @@ function CameraRig({ selectedPos, center }: { selectedPos?: Vec3; center: Vec3 }
   useEffect(() => {
     ref.current?.setTarget(center[0], center[1], center[2], false);
   }, []);
-  return <CameraControls ref={ref} makeDefault maxDistance={220} minDistance={5} dollySpeed={0.6} />;
+  return <CameraControls ref={ref} makeDefault maxDistance={220 * zoom} minDistance={5} dollySpeed={0.6} />;
 }
 
 function LayerPlane({ label, y, bounds, columns }: { label: string; y: number; bounds: { minX: number; maxX: number; minZ: number; maxZ: number }; columns: { id: string; x: number; width: number; depth: number }[] }) {
