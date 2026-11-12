@@ -122,7 +122,9 @@ for (const host of COLUMNS) {
         if (pub === '80' || pub === '443') continue;
         const base = fqdns[0] ?? host;
         const eid = `e:${base}:${pub}`;
-        addNode({ id: eid, label: `${base}:${pub}`, type: 'endpoint', layer: 'endpoint', column: host, meta: { Zugang: 'Port direkt', Port: pub } });
+        // Prüfadresse für Health-Checks: Hostname der Route, sonst LAN-Adresse des Hosts aus der Config
+        const addr = fqdns[0] ?? info.meta?.LAN ?? host;
+        addNode({ id: eid, label: `${base}:${pub}`, type: 'endpoint', layer: 'endpoint', column: host, meta: { Zugang: 'Port direkt', Port: pub, Check: `tcp://${addr}:${pub}` } });
         addEdge(eid, cid, 'routes');
       }
 

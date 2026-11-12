@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import { Canvas, type ThreeEvent } from '@react-three/fiber';
+import { Canvas, useFrame, type ThreeEvent } from '@react-three/fiber';
 import { CameraControls, Html, QuadraticBezierLine } from '@react-three/drei';
 import { computeLayout, type LayoutOptions, type Vec3 } from './layout';
 import { computeHighlight, type Highlight } from './graph';
-import type { EdgeKind, HighlightMode, InfraEdge, InfraNode, NodeType, Topology } from './types';
+import type { Mesh } from 'three';
+import type { EdgeKind, HighlightMode, InfraEdge, InfraNode, NodeStatus, NodeType, Topology } from './types';
 
 export interface InfraSceneProps {
   topology: Topology;
@@ -13,6 +14,9 @@ export interface InfraSceneProps {
   hiddenLayers?: string[];
   /** Container-/Endpunkt-Beschriftungen immer zeigen, nicht nur bei Hover/Auswahl. */
   showAllLabels?: boolean;
+  /** Live-Zustand je Knoten: gestörte Knoten pulsieren rot, verdächtige sind orange markiert. */
+  status?: Record<string, NodeStatus>;
+  background?: string;
   layout?: LayoutOptions;
   className?: string;
   style?: CSSProperties;
@@ -42,6 +46,7 @@ export const EDGE_COLORS: Record<EdgeKind, string> = {
 
 export const DOWN_COLOR = '#60a5fa';
 export const UP_COLOR = '#f87171';
+export const STATUS_COLORS: Record<'down' | 'suspect', string> = { down: '#ef4444', suspect: '#f59e0b' };
 
 export function InfraScene({
   topology,
@@ -50,6 +55,8 @@ export function InfraScene({
   mode = 'both',
   hiddenLayers = [],
   showAllLabels = false,
+  status,
+  background = '#0b1020',
   layout: layoutOpts,
   className,
   style,
@@ -67,8 +74,8 @@ export function InfraScene({
   return (
     <div className={className} style={{ position: 'relative', width: '100%', height: '100%', ...style }}>
       <Canvas camera={{ position: [center[0] + 10, center[1] + 45, center[2] + 85], fov: 45, near: 0.5, far: 1000 }} onPointerMissed={() => onSelect?.(null)}>
-        <color attach="background" args={['#0b1020']} />
-        <fog attach="fog" args={['#0b1020', 120, 260]} />
+        <color attach="background" args={[background]} />
+        <fog attach="fog" args={[background, 120, 260]} />
         <ambientLight intensity={0.55} />
         <directionalLight position={[40, 80, 40]} intensity={1.1} />
 
@@ -84,7 +91,8 @@ export function InfraScene({
           const a = nodeById.get(e.from);
           const b = nodeById.get(e.to);
           if (!visible(a) || !visible(b)) return null;
-          return <EdgeLine key={i} edge={e} index={i} from={layout.positions.get(e.from)!} to={layout.positions.get(e.to)!} highlight={highlight} />;
+          const faulty = !!status && isFaulty(status[e.from]) && isFaulty(status[e.to]);
+          return <EdgeLine key={i} edge={e} index={i} from={layout.positions.get(e.from)!} to={layout.positions.get(e.to)!} highlight={highlight} faulty={faulty} />;
         })}
 
         {topology.nodes.map((n) =>
@@ -96,7 +104,14 @@ export function InfraScene({
               selected={n.id === selectedId}
               hovered={n.id === hovered}
               state={nodeState(n.id, highlight)}
-              showLabel={showAllLabels || n.id === hovered || !['container', 'endpoint'].includes(n.type) || (!!highlight && nodeState(n.id, highlight) !== 'dim')}
+              health={status?.[n.id]}
+              showLabel={
+                showAllLabels ||
+                n.id === hovered ||
+                !['container', 'endpoint'].includes(n.type) ||
+                isFaulty(status?.[n.id]) ||
+                (!!highlight && nodeState(n.id, highlight) !== 'dim')
+              }
               onHover={setHovered}
               onSelect={(id) => onSelect?.(id)}
             />
@@ -108,6 +123,8 @@ export function InfraScene({
 }
 
 type NodeState = 'normal' | 'down' | 'up' | 'self' | 'dim';
+
+const isFaulty = (s?: NodeStatus) => s === 'down' || s === 'suspect';
 
 function nodeState(id: string, h: Highlight | null): NodeState {
   if (!h) return 'normal';
@@ -174,20 +191,21 @@ function PlaneOutline({ cx, cz, w, d }: { cx: number; cz: number; w: number; d: 
   return (
     <lineSegments>
       <bufferGeometry>
-        <bufferAttribute attach="attributes-position" args={[pts, 3]} count={8} array={pts} itemSize={3} />
+        <bufferAttribute attach="attributes-position" args={[pts, 3]} />
       </bufferGeometry>
       <lineBasicMaterial color="#475569" transparent opacity={0.6} />
     </lineSegments>
   );
 }
 
-function EdgeLine({ edge, index, from, to, highlight }: { edge: InfraEdge; index: number; from: Vec3; to: Vec3; highlight: Highlight | null }) {
+function EdgeLine({ edge, index, from, to, highlight, faulty }: { edge: InfraEdge; index: number; from: Vec3; to: Vec3; highlight: Highlight | null; faulty: boolean }) {
   const sameLayer = Math.abs(from[1] - to[1]) < 0.01;
   const mid: Vec3 = [(from[0] + to[0]) / 2, (from[1] + to[1]) / 2 + (sameLayer ? 1.5 + Math.hypot(to[0] - from[0], to[2] - from[2]) * 0.12 : 0), (from[2] + to[2]) / 2];
 
   let color = EDGE_COLORS[edge.kind];
   let opacity = edge.kind === 'via' ? 0.12 : 0.35;
   let width = 1;
+  if (faulty) { color = STATUS_COLORS.suspect; opacity = 0.8; width = 2; }
   if (highlight) {
     if (highlight.down.edges.has(index)) { color = DOWN_COLOR; opacity = 0.95; width = 2.5; }
     else if (highlight.up.edges.has(index)) { color = UP_COLOR; opacity = 0.95; width = 2.5; }
@@ -211,14 +229,15 @@ function EdgeLine({ edge, index, from, to, highlight }: { edge: InfraEdge; index
 }
 
 function NodeMesh({
-  node, position, selected, hovered, state, showLabel, onHover, onSelect,
+  node, position, selected, hovered, state, health, showLabel, onHover, onSelect,
 }: {
-  node: InfraNode; position: Vec3; selected: boolean; hovered: boolean; state: NodeState; showLabel: boolean;
+  node: InfraNode; position: Vec3; selected: boolean; hovered: boolean; state: NodeState; health?: NodeStatus; showLabel: boolean;
   onHover: (id: string | null) => void; onSelect: (id: string) => void;
 }) {
   const base = NODE_COLORS[node.type];
   const dim = state === 'dim';
   const ring = state === 'down' ? DOWN_COLOR : state === 'up' ? UP_COLOR : null;
+  const alarm = health === 'down' || health === 'suspect' ? STATUS_COLORS[health] : null;
   const isDb = node.meta?.Rolle === 'Datenhaltung';
   const scale = selected ? 1.35 : hovered ? 1.15 : 1;
 
@@ -248,14 +267,30 @@ function NodeMesh({
           <meshBasicMaterial color={ring} transparent opacity={0.8} />
         </mesh>
       )}
+      {alarm && <AlarmRing color={alarm} pulse={health === 'down'} />}
       {showLabel && (
         <Html position={[0, node.type === 'host' ? 1.6 : 1.2, 0]} center distanceFactor={32} style={{ pointerEvents: 'none' }} zIndexRange={[10, 0]}>
-          <div style={{ ...nodeLabelStyle, opacity: dim ? 0.25 : 1, borderColor: selected ? '#fff' : ring ?? 'transparent', fontWeight: node.type === 'host' || selected ? 600 : 400 }}>
+          <div style={{ ...nodeLabelStyle, opacity: dim ? 0.25 : 1, borderColor: selected ? '#fff' : alarm ?? ring ?? 'transparent', fontWeight: node.type === 'host' || selected ? 600 : 400 }}>
             {node.label}
           </div>
         </Html>
       )}
     </group>
+  );
+}
+
+function AlarmRing({ color, pulse }: { color: string; pulse: boolean }) {
+  const ref = useRef<Mesh>(null);
+  useFrame(({ clock }) => {
+    if (!ref.current || !pulse) return;
+    const s = 1 + 0.35 * (0.5 + 0.5 * Math.sin(clock.elapsedTime * 4));
+    ref.current.scale.set(s, s, s);
+  });
+  return (
+    <mesh ref={ref} rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.7, 0]}>
+      <ringGeometry args={[1.5, 1.85, 40]} />
+      <meshBasicMaterial color={color} transparent opacity={0.9} depthWrite={false} />
+    </mesh>
   );
 }
 
