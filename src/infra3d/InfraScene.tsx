@@ -76,7 +76,7 @@ export function InfraScene({
 
   return (
     <div className={className} style={{ position: 'relative', width: '100%', height: '100%', ...style }}>
-      <Canvas camera={{ position: [center[0] + 10, center[1] + 45 * zoom, center[2] + 85 * zoom], fov: 45, near: 0.5, far: 1000 }} onPointerMissed={() => onSelect?.(null)}>
+      <Canvas camera={{ position: [center[0] + 10, center[1] + 45 * zoom, center[2] + 85 * zoom], fov: 45, near: 0.5, far: 1000 * zoom }} onPointerMissed={() => onSelect?.(null)}>
         <color attach="background" args={[background]} />
         <fog attach="fog" args={[background, 120 * zoom, 260 * zoom]} />
         <ambientLight intensity={0.55} />
