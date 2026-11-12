@@ -1,0 +1,30 @@
+{
+  "hosts": {
+    "web-01": { "label": "web-01", "meta": { "Hardware": "VPS 4 vCPU / 8 GB", "Rolle": "Produktion" }, "uplink": "site:dc" },
+    "homelab": { "label": "homelab", "meta": { "Hardware": "Mini-PC", "LAN": "10.0.0.10" }, "uplink": "n:lan" }
+  },
+  "nodes": [
+    { "id": "site:internet", "label": "Internet", "type": "site", "layer": "physical", "offset": [0, -14] },
+    { "id": "site:dc", "label": "Rechenzentrum", "type": "site", "layer": "physical", "offset": [0, -7] },
+    { "id": "dev:router", "label": "Router", "type": "device", "layer": "physical", "column": "homelab", "meta": { "LAN": "10.0.0.1" }, "offset": [0, -7] },
+    { "id": "dev:nas", "label": "NAS", "type": "device", "layer": "physical", "column": "homelab", "meta": { "LAN": "10.0.0.20" }, "offset": [7, 3] },
+    { "id": "n:lan", "label": "LAN 10.0.0.0/24", "type": "network", "layer": "network", "column": "homelab" }
+  ],
+  "edges": [
+    { "from": "site:dc", "to": "site:internet", "kind": "uplink" },
+    { "from": "dev:router", "to": "site:internet", "kind": "uplink" },
+    { "from": "n:lan", "to": "dev:router", "kind": "uplink" },
+    { "from": "dev:nas", "to": "n:lan", "kind": "member" }
+  ],
+  "backupTarget": "dev:nas",
+  "nasTarget": "dev:nas",
+  "networkOverrides": {
+    "iot_macvlan": { "label": "iot (macvlan)", "meta": { "Typ": "macvlan" }, "memberOf": "n:lan", "edgeLabel": "macvlan" }
+  },
+  "addressLinks": [
+    { "match": ["10.0.0.1:"], "to": "dev:router", "label": "API des Routers" }
+  ],
+  "authMiddlewares": [
+    { "match": "keycloak", "endpoint": "auth", "label": "Keycloak-Login" }
+  ]
+}
