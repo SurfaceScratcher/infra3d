@@ -1,0 +1,1141 @@
+{
+  "name": "Beispiel-Infrastruktur",
+  "columns": [
+    "web-01",
+    "build-01",
+    "homelab"
+  ],
+  "layers": [
+    {
+      "id": "physical",
+      "label": "Hardware & Standorte"
+    },
+    {
+      "id": "network",
+      "label": "Netzwerke"
+    },
+    {
+      "id": "container",
+      "label": "Container"
+    },
+    {
+      "id": "endpoint",
+      "label": "Endpunkte"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "site:internet",
+      "label": "Internet",
+      "type": "site",
+      "layer": "physical",
+      "offset": [
+        0,
+        -14
+      ]
+    },
+    {
+      "id": "site:dc",
+      "label": "Rechenzentrum",
+      "type": "site",
+      "layer": "physical",
+      "meta": {
+        "Standort": "Frankfurt"
+      },
+      "offset": [
+        0,
+        -7
+      ]
+    },
+    {
+      "id": "dev:router",
+      "label": "Router",
+      "type": "device",
+      "layer": "physical",
+      "column": "homelab",
+      "meta": {
+        "LAN": "10.0.0.1",
+        "Funktion": "Router, Firewall, WireGuard"
+      },
+      "offset": [
+        0,
+        -7
+      ]
+    },
+    {
+      "id": "dev:nas",
+      "label": "NAS",
+      "type": "device",
+      "layer": "physical",
+      "column": "homelab",
+      "meta": {
+        "LAN": "10.0.0.20",
+        "Funktion": "Backups, Medien (SMB)"
+      },
+      "offset": [
+        7,
+        3
+      ]
+    },
+    {
+      "id": "n:lan",
+      "label": "LAN 10.0.0.0/24",
+      "type": "network",
+      "layer": "network",
+      "column": "homelab",
+      "meta": {
+        "Typ": "LAN"
+      }
+    },
+    {
+      "id": "h:web-01",
+      "label": "web-01",
+      "type": "host",
+      "layer": "physical",
+      "column": "web-01",
+      "meta": {
+        "Hardware": "VPS 4 vCPU / 8 GB",
+        "Rolle": "Produktion",
+        "Stacks": 4
+      }
+    },
+    {
+      "id": "n:web-01:proxy",
+      "label": "proxy (web-01)",
+      "type": "network",
+      "layer": "network",
+      "column": "web-01",
+      "meta": {
+        "Host": "web-01",
+        "Typ": "extern (geteilt)"
+      }
+    },
+    {
+      "id": "c:web-01:traefik:traefik",
+      "label": "traefik",
+      "type": "container",
+      "layer": "container",
+      "column": "web-01",
+      "group": "traefik",
+      "meta": {
+        "Stack": "traefik",
+        "Image": "traefik:v3"
+      }
+    },
+    {
+      "id": "n:web-01:shop_internal",
+      "label": "shop_internal",
+      "type": "network",
+      "layer": "network",
+      "column": "web-01",
+      "meta": {
+        "Host": "web-01",
+        "Typ": "Stack-intern"
+      }
+    },
+    {
+      "id": "c:web-01:shop:web",
+      "label": "web",
+      "type": "container",
+      "layer": "container",
+      "column": "web-01",
+      "group": "shop",
+      "meta": {
+        "Stack": "shop",
+        "Image": "registry.example.com/shop/web:1.8"
+      }
+    },
+    {
+      "id": "c:web-01:shop:api",
+      "label": "api",
+      "type": "container",
+      "layer": "container",
+      "column": "web-01",
+      "group": "shop",
+      "meta": {
+        "Stack": "shop",
+        "Image": "registry.example.com/shop/api:1.8"
+      }
+    },
+    {
+      "id": "c:web-01:shop:worker",
+      "label": "worker",
+      "type": "container",
+      "layer": "container",
+      "column": "web-01",
+      "group": "shop",
+      "meta": {
+        "Stack": "shop",
+        "Image": "registry.example.com/shop/api:1.8"
+      }
+    },
+    {
+      "id": "c:web-01:shop:shop-db",
+      "label": "shop-db",
+      "type": "container",
+      "layer": "container",
+      "column": "web-01",
+      "group": "shop",
+      "meta": {
+        "Stack": "shop",
+        "Image": "postgres:17-alpine",
+        "Rolle": "Datenhaltung"
+      }
+    },
+    {
+      "id": "c:web-01:shop:redis",
+      "label": "redis",
+      "type": "container",
+      "layer": "container",
+      "column": "web-01",
+      "group": "shop",
+      "meta": {
+        "Stack": "shop",
+        "Image": "redis:7-alpine",
+        "Rolle": "Datenhaltung"
+      }
+    },
+    {
+      "id": "n:web-01:auth_internal",
+      "label": "auth_internal",
+      "type": "network",
+      "layer": "network",
+      "column": "web-01",
+      "meta": {
+        "Host": "web-01",
+        "Typ": "Stack-intern"
+      }
+    },
+    {
+      "id": "c:web-01:auth:keycloak",
+      "label": "keycloak",
+      "type": "container",
+      "layer": "container",
+      "column": "web-01",
+      "group": "auth",
+      "meta": {
+        "Stack": "auth",
+        "Image": "quay.io/keycloak/keycloak:26"
+      }
+    },
+    {
+      "id": "c:web-01:auth:keycloak-db",
+      "label": "keycloak-db",
+      "type": "container",
+      "layer": "container",
+      "column": "web-01",
+      "group": "auth",
+      "meta": {
+        "Stack": "auth",
+        "Image": "postgres:17-alpine",
+        "Rolle": "Datenhaltung"
+      }
+    },
+    {
+      "id": "n:web-01:monitoring_internal",
+      "label": "monitoring_internal",
+      "type": "network",
+      "layer": "network",
+      "column": "web-01",
+      "meta": {
+        "Host": "web-01",
+        "Typ": "Stack-intern"
+      }
+    },
+    {
+      "id": "c:web-01:monitoring:grafana",
+      "label": "grafana",
+      "type": "container",
+      "layer": "container",
+      "column": "web-01",
+      "group": "monitoring",
+      "meta": {
+        "Stack": "monitoring",
+        "Image": "grafana/grafana:11"
+      }
+    },
+    {
+      "id": "c:web-01:monitoring:prometheus",
+      "label": "prometheus",
+      "type": "container",
+      "layer": "container",
+      "column": "web-01",
+      "group": "monitoring",
+      "meta": {
+        "Stack": "monitoring",
+        "Image": "prom/prometheus:v3"
+      }
+    },
+    {
+      "id": "h:build-01",
+      "label": "build-01",
+      "type": "host",
+      "layer": "physical",
+      "column": "build-01",
+      "meta": {
+        "Hardware": "VPS 8 vCPU / 16 GB",
+        "Rolle": "Entwicklung & CI",
+        "Stacks": 4
+      }
+    },
+    {
+      "id": "n:build-01:proxy",
+      "label": "proxy (build-01)",
+      "type": "network",
+      "layer": "network",
+      "column": "build-01",
+      "meta": {
+        "Host": "build-01",
+        "Typ": "extern (geteilt)"
+      }
+    },
+    {
+      "id": "c:build-01:traefik:traefik",
+      "label": "traefik",
+      "type": "container",
+      "layer": "container",
+      "column": "build-01",
+      "group": "traefik",
+      "meta": {
+        "Stack": "traefik",
+        "Image": "traefik:v3"
+      }
+    },
+    {
+      "id": "n:build-01:git_internal",
+      "label": "git_internal",
+      "type": "network",
+      "layer": "network",
+      "column": "build-01",
+      "meta": {
+        "Host": "build-01",
+        "Typ": "Stack-intern"
+      }
+    },
+    {
+      "id": "c:build-01:git:forgejo",
+      "label": "forgejo",
+      "type": "container",
+      "layer": "container",
+      "column": "build-01",
+      "group": "git",
+      "meta": {
+        "Stack": "git",
+        "Image": "codeberg.org/forgejo/forgejo:11"
+      }
+    },
+    {
+      "id": "c:build-01:git:forgejo-db",
+      "label": "forgejo-db",
+      "type": "container",
+      "layer": "container",
+      "column": "build-01",
+      "group": "git",
+      "meta": {
+        "Stack": "git",
+        "Image": "postgres:17-alpine",
+        "Rolle": "Datenhaltung"
+      }
+    },
+    {
+      "id": "n:build-01:ci_internal",
+      "label": "ci_internal",
+      "type": "network",
+      "layer": "network",
+      "column": "build-01",
+      "meta": {
+        "Host": "build-01",
+        "Typ": "Stack-intern"
+      }
+    },
+    {
+      "id": "c:build-01:ci:woodpecker",
+      "label": "woodpecker",
+      "type": "container",
+      "layer": "container",
+      "column": "build-01",
+      "group": "ci",
+      "meta": {
+        "Stack": "ci",
+        "Image": "woodpeckerci/woodpecker-server:v3"
+      }
+    },
+    {
+      "id": "c:build-01:ci:agent",
+      "label": "agent",
+      "type": "container",
+      "layer": "container",
+      "column": "build-01",
+      "group": "ci",
+      "meta": {
+        "Stack": "ci",
+        "Image": "woodpeckerci/woodpecker-agent:v3"
+      }
+    },
+    {
+      "id": "c:build-01:registry:registry",
+      "label": "registry",
+      "type": "container",
+      "layer": "container",
+      "column": "build-01",
+      "group": "registry",
+      "meta": {
+        "Stack": "registry",
+        "Image": "registry:2"
+      }
+    },
+    {
+      "id": "h:homelab",
+      "label": "homelab",
+      "type": "host",
+      "layer": "physical",
+      "column": "homelab",
+      "meta": {
+        "Hardware": "Mini-PC",
+        "Rolle": "Heimserver (LAN-only)",
+        "LAN": "10.0.0.10",
+        "Stacks": 4
+      }
+    },
+    {
+      "id": "n:homelab:proxy",
+      "label": "proxy (homelab)",
+      "type": "network",
+      "layer": "network",
+      "column": "homelab",
+      "meta": {
+        "Host": "homelab",
+        "Typ": "extern (geteilt)"
+      }
+    },
+    {
+      "id": "c:homelab:traefik:traefik",
+      "label": "traefik",
+      "type": "container",
+      "layer": "container",
+      "column": "homelab",
+      "group": "traefik",
+      "meta": {
+        "Stack": "traefik",
+        "Image": "traefik:v3"
+      }
+    },
+    {
+      "id": "n:homelab:photos_internal",
+      "label": "photos_internal",
+      "type": "network",
+      "layer": "network",
+      "column": "homelab",
+      "meta": {
+        "Host": "homelab",
+        "Typ": "Stack-intern"
+      }
+    },
+    {
+      "id": "c:homelab:photos:immich-server",
+      "label": "immich-server",
+      "type": "container",
+      "layer": "container",
+      "column": "homelab",
+      "group": "photos",
+      "meta": {
+        "Stack": "photos",
+        "Image": "ghcr.io/immich-app/immich-server:release"
+      }
+    },
+    {
+      "id": "c:homelab:photos:immich-ml",
+      "label": "immich-ml",
+      "type": "container",
+      "layer": "container",
+      "column": "homelab",
+      "group": "photos",
+      "meta": {
+        "Stack": "photos",
+        "Image": "ghcr.io/immich-app/immich-machine-learning:release"
+      }
+    },
+    {
+      "id": "c:homelab:photos:immich-db",
+      "label": "immich-db",
+      "type": "container",
+      "layer": "container",
+      "column": "homelab",
+      "group": "photos",
+      "meta": {
+        "Stack": "photos",
+        "Image": "ghcr.io/immich-app/postgres:14",
+        "Rolle": "Datenhaltung"
+      }
+    },
+    {
+      "id": "c:homelab:photos:immich-redis",
+      "label": "immich-redis",
+      "type": "container",
+      "layer": "container",
+      "column": "homelab",
+      "group": "photos",
+      "meta": {
+        "Stack": "photos",
+        "Image": "valkey/valkey:8",
+        "Rolle": "Datenhaltung"
+      }
+    },
+    {
+      "id": "c:homelab:media:jellyfin",
+      "label": "jellyfin",
+      "type": "container",
+      "layer": "container",
+      "column": "homelab",
+      "group": "media",
+      "meta": {
+        "Stack": "media",
+        "Image": "jellyfin/jellyfin:10.10"
+      }
+    },
+    {
+      "id": "c:homelab:dns:pihole",
+      "label": "pihole",
+      "type": "container",
+      "layer": "container",
+      "column": "homelab",
+      "group": "dns",
+      "meta": {
+        "Stack": "dns",
+        "Image": "pihole/pihole:2025.03"
+      }
+    },
+    {
+      "id": "e:shop.example.com",
+      "label": "shop.example.com",
+      "type": "endpoint",
+      "layer": "endpoint",
+      "column": "web-01",
+      "meta": {
+        "URL": "https://shop.example.com",
+        "Zugang": "Traefik (HTTPS)"
+      }
+    },
+    {
+      "id": "e:api.example.com",
+      "label": "api.example.com",
+      "type": "endpoint",
+      "layer": "endpoint",
+      "column": "web-01",
+      "meta": {
+        "URL": "https://api.example.com",
+        "Zugang": "Traefik (HTTPS)"
+      }
+    },
+    {
+      "id": "e:auth.example.com",
+      "label": "auth.example.com",
+      "type": "endpoint",
+      "layer": "endpoint",
+      "column": "web-01",
+      "meta": {
+        "URL": "https://auth.example.com",
+        "Zugang": "Traefik (HTTPS)"
+      }
+    },
+    {
+      "id": "e:grafana.example.com",
+      "label": "grafana.example.com",
+      "type": "endpoint",
+      "layer": "endpoint",
+      "column": "web-01",
+      "meta": {
+        "URL": "https://grafana.example.com",
+        "Zugang": "Traefik (HTTPS)"
+      }
+    },
+    {
+      "id": "e:git.example.com",
+      "label": "git.example.com",
+      "type": "endpoint",
+      "layer": "endpoint",
+      "column": "build-01",
+      "meta": {
+        "URL": "https://git.example.com",
+        "Zugang": "Traefik (HTTPS)"
+      }
+    },
+    {
+      "id": "e:ci.example.com",
+      "label": "ci.example.com",
+      "type": "endpoint",
+      "layer": "endpoint",
+      "column": "build-01",
+      "meta": {
+        "URL": "https://ci.example.com",
+        "Zugang": "Traefik (HTTPS)"
+      }
+    },
+    {
+      "id": "e:registry.example.com",
+      "label": "registry.example.com",
+      "type": "endpoint",
+      "layer": "endpoint",
+      "column": "build-01",
+      "meta": {
+        "URL": "https://registry.example.com",
+        "Zugang": "Traefik (HTTPS)"
+      }
+    },
+    {
+      "id": "e:photos.home.example.com",
+      "label": "photos.home.example.com",
+      "type": "endpoint",
+      "layer": "endpoint",
+      "column": "homelab",
+      "meta": {
+        "URL": "https://photos.home.example.com",
+        "Zugang": "Traefik (HTTPS)"
+      }
+    },
+    {
+      "id": "e:media.home.example.com",
+      "label": "media.home.example.com",
+      "type": "endpoint",
+      "layer": "endpoint",
+      "column": "homelab",
+      "meta": {
+        "URL": "https://media.home.example.com",
+        "Zugang": "Traefik (HTTPS)"
+      }
+    },
+    {
+      "id": "e:dns.home.example.com",
+      "label": "dns.home.example.com",
+      "type": "endpoint",
+      "layer": "endpoint",
+      "column": "homelab",
+      "meta": {
+        "URL": "https://dns.home.example.com",
+        "Zugang": "Traefik (HTTPS)"
+      }
+    },
+    {
+      "id": "e:homelab:53",
+      "label": "homelab:53",
+      "type": "endpoint",
+      "layer": "endpoint",
+      "column": "homelab",
+      "meta": {
+        "Zugang": "Port direkt",
+        "Port": "53"
+      }
+    },
+    {
+      "id": "e:git.example.com:2222",
+      "label": "git.example.com:2222",
+      "type": "endpoint",
+      "layer": "endpoint",
+      "column": "build-01",
+      "meta": {
+        "Zugang": "Port direkt",
+        "Port": "2222"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "from": "site:dc",
+      "to": "site:internet",
+      "kind": "uplink"
+    },
+    {
+      "from": "dev:router",
+      "to": "site:internet",
+      "kind": "uplink"
+    },
+    {
+      "from": "n:lan",
+      "to": "dev:router",
+      "kind": "uplink"
+    },
+    {
+      "from": "dev:nas",
+      "to": "n:lan",
+      "kind": "member"
+    },
+    {
+      "from": "h:web-01",
+      "to": "site:dc",
+      "kind": "uplink"
+    },
+    {
+      "from": "h:web-01",
+      "to": "dev:nas",
+      "kind": "backup",
+      "label": "restic"
+    },
+    {
+      "from": "n:web-01:proxy",
+      "to": "h:web-01",
+      "kind": "runs-on"
+    },
+    {
+      "from": "c:web-01:traefik:traefik",
+      "to": "n:web-01:proxy",
+      "kind": "member"
+    },
+    {
+      "from": "n:web-01:shop_internal",
+      "to": "h:web-01",
+      "kind": "runs-on"
+    },
+    {
+      "from": "c:web-01:shop:web",
+      "to": "n:web-01:proxy",
+      "kind": "member"
+    },
+    {
+      "from": "c:web-01:shop:web",
+      "to": "n:web-01:shop_internal",
+      "kind": "member"
+    },
+    {
+      "from": "c:web-01:shop:api",
+      "to": "n:web-01:proxy",
+      "kind": "member"
+    },
+    {
+      "from": "c:web-01:shop:api",
+      "to": "n:web-01:shop_internal",
+      "kind": "member"
+    },
+    {
+      "from": "c:web-01:shop:worker",
+      "to": "n:web-01:shop_internal",
+      "kind": "member"
+    },
+    {
+      "from": "c:web-01:shop:shop-db",
+      "to": "n:web-01:shop_internal",
+      "kind": "member"
+    },
+    {
+      "from": "c:web-01:shop:redis",
+      "to": "n:web-01:shop_internal",
+      "kind": "member"
+    },
+    {
+      "from": "n:web-01:auth_internal",
+      "to": "h:web-01",
+      "kind": "runs-on"
+    },
+    {
+      "from": "c:web-01:auth:keycloak",
+      "to": "n:web-01:proxy",
+      "kind": "member"
+    },
+    {
+      "from": "c:web-01:auth:keycloak",
+      "to": "n:web-01:auth_internal",
+      "kind": "member"
+    },
+    {
+      "from": "c:web-01:auth:keycloak-db",
+      "to": "n:web-01:auth_internal",
+      "kind": "member"
+    },
+    {
+      "from": "n:web-01:monitoring_internal",
+      "to": "h:web-01",
+      "kind": "runs-on"
+    },
+    {
+      "from": "c:web-01:monitoring:grafana",
+      "to": "n:web-01:proxy",
+      "kind": "member"
+    },
+    {
+      "from": "c:web-01:monitoring:grafana",
+      "to": "n:web-01:monitoring_internal",
+      "kind": "member"
+    },
+    {
+      "from": "c:web-01:monitoring:prometheus",
+      "to": "n:web-01:monitoring_internal",
+      "kind": "member"
+    },
+    {
+      "from": "h:build-01",
+      "to": "site:dc",
+      "kind": "uplink"
+    },
+    {
+      "from": "h:build-01",
+      "to": "dev:nas",
+      "kind": "backup",
+      "label": "restic"
+    },
+    {
+      "from": "n:build-01:proxy",
+      "to": "h:build-01",
+      "kind": "runs-on"
+    },
+    {
+      "from": "c:build-01:traefik:traefik",
+      "to": "n:build-01:proxy",
+      "kind": "member"
+    },
+    {
+      "from": "n:build-01:git_internal",
+      "to": "h:build-01",
+      "kind": "runs-on"
+    },
+    {
+      "from": "c:build-01:git:forgejo",
+      "to": "n:build-01:proxy",
+      "kind": "member"
+    },
+    {
+      "from": "c:build-01:git:forgejo",
+      "to": "n:build-01:git_internal",
+      "kind": "member"
+    },
+    {
+      "from": "c:build-01:git:forgejo-db",
+      "to": "n:build-01:git_internal",
+      "kind": "member"
+    },
+    {
+      "from": "n:build-01:ci_internal",
+      "to": "h:build-01",
+      "kind": "runs-on"
+    },
+    {
+      "from": "c:build-01:ci:woodpecker",
+      "to": "n:build-01:proxy",
+      "kind": "member"
+    },
+    {
+      "from": "c:build-01:ci:woodpecker",
+      "to": "n:build-01:ci_internal",
+      "kind": "member"
+    },
+    {
+      "from": "c:build-01:ci:agent",
+      "to": "n:build-01:ci_internal",
+      "kind": "member"
+    },
+    {
+      "from": "c:build-01:registry:registry",
+      "to": "n:build-01:proxy",
+      "kind": "member"
+    },
+    {
+      "from": "h:homelab",
+      "to": "n:lan",
+      "kind": "member"
+    },
+    {
+      "from": "h:homelab",
+      "to": "dev:nas",
+      "kind": "backup",
+      "label": "restic"
+    },
+    {
+      "from": "n:homelab:proxy",
+      "to": "h:homelab",
+      "kind": "runs-on"
+    },
+    {
+      "from": "c:homelab:traefik:traefik",
+      "to": "n:homelab:proxy",
+      "kind": "member"
+    },
+    {
+      "from": "n:homelab:photos_internal",
+      "to": "h:homelab",
+      "kind": "runs-on"
+    },
+    {
+      "from": "c:homelab:photos:immich-server",
+      "to": "n:homelab:proxy",
+      "kind": "member"
+    },
+    {
+      "from": "c:homelab:photos:immich-server",
+      "to": "n:homelab:photos_internal",
+      "kind": "member"
+    },
+    {
+      "from": "c:homelab:photos:immich-ml",
+      "to": "n:homelab:photos_internal",
+      "kind": "member"
+    },
+    {
+      "from": "c:homelab:photos:immich-db",
+      "to": "n:homelab:photos_internal",
+      "kind": "member"
+    },
+    {
+      "from": "c:homelab:photos:immich-redis",
+      "to": "n:homelab:photos_internal",
+      "kind": "member"
+    },
+    {
+      "from": "c:homelab:media:jellyfin",
+      "to": "n:homelab:proxy",
+      "kind": "member"
+    },
+    {
+      "from": "c:homelab:dns:pihole",
+      "to": "n:homelab:proxy",
+      "kind": "member"
+    },
+    {
+      "from": "c:web-01:shop:api",
+      "to": "c:web-01:shop:shop-db",
+      "kind": "depends"
+    },
+    {
+      "from": "c:web-01:shop:api",
+      "to": "c:web-01:shop:redis",
+      "kind": "depends"
+    },
+    {
+      "from": "c:web-01:shop:worker",
+      "to": "c:web-01:shop:shop-db",
+      "kind": "depends"
+    },
+    {
+      "from": "c:web-01:shop:worker",
+      "to": "c:web-01:shop:redis",
+      "kind": "depends"
+    },
+    {
+      "from": "c:web-01:shop:web",
+      "to": "c:web-01:shop:api",
+      "kind": "depends"
+    },
+    {
+      "from": "c:web-01:auth:keycloak",
+      "to": "c:web-01:auth:keycloak-db",
+      "kind": "depends"
+    },
+    {
+      "from": "c:web-01:monitoring:grafana",
+      "to": "c:web-01:monitoring:prometheus",
+      "kind": "depends"
+    },
+    {
+      "from": "c:build-01:git:forgejo",
+      "to": "c:build-01:git:forgejo-db",
+      "kind": "depends"
+    },
+    {
+      "from": "c:build-01:ci:agent",
+      "to": "c:build-01:ci:woodpecker",
+      "kind": "depends"
+    },
+    {
+      "from": "c:homelab:photos:immich-server",
+      "to": "c:homelab:photos:immich-db",
+      "kind": "depends"
+    },
+    {
+      "from": "c:homelab:photos:immich-server",
+      "to": "c:homelab:photos:immich-redis",
+      "kind": "depends"
+    },
+    {
+      "from": "c:homelab:photos:immich-server",
+      "to": "c:homelab:photos:immich-ml",
+      "kind": "depends"
+    },
+    {
+      "from": "e:shop.example.com",
+      "to": "c:web-01:shop:web",
+      "kind": "routes"
+    },
+    {
+      "from": "e:shop.example.com",
+      "to": "c:web-01:traefik:traefik",
+      "kind": "via",
+      "label": "Reverse Proxy"
+    },
+    {
+      "from": "e:api.example.com",
+      "to": "c:web-01:shop:api",
+      "kind": "routes"
+    },
+    {
+      "from": "e:api.example.com",
+      "to": "c:web-01:traefik:traefik",
+      "kind": "via",
+      "label": "Reverse Proxy"
+    },
+    {
+      "from": "e:auth.example.com",
+      "to": "c:web-01:auth:keycloak",
+      "kind": "routes"
+    },
+    {
+      "from": "e:auth.example.com",
+      "to": "c:web-01:traefik:traefik",
+      "kind": "via",
+      "label": "Reverse Proxy"
+    },
+    {
+      "from": "e:grafana.example.com",
+      "to": "c:web-01:monitoring:grafana",
+      "kind": "routes"
+    },
+    {
+      "from": "e:grafana.example.com",
+      "to": "c:web-01:traefik:traefik",
+      "kind": "via",
+      "label": "Reverse Proxy"
+    },
+    {
+      "from": "e:git.example.com",
+      "to": "c:build-01:git:forgejo",
+      "kind": "routes"
+    },
+    {
+      "from": "e:git.example.com",
+      "to": "c:build-01:traefik:traefik",
+      "kind": "via",
+      "label": "Reverse Proxy"
+    },
+    {
+      "from": "e:ci.example.com",
+      "to": "c:build-01:ci:woodpecker",
+      "kind": "routes"
+    },
+    {
+      "from": "e:ci.example.com",
+      "to": "c:build-01:traefik:traefik",
+      "kind": "via",
+      "label": "Reverse Proxy"
+    },
+    {
+      "from": "e:registry.example.com",
+      "to": "c:build-01:registry:registry",
+      "kind": "routes"
+    },
+    {
+      "from": "e:registry.example.com",
+      "to": "c:build-01:traefik:traefik",
+      "kind": "via",
+      "label": "Reverse Proxy"
+    },
+    {
+      "from": "e:photos.home.example.com",
+      "to": "c:homelab:photos:immich-server",
+      "kind": "routes"
+    },
+    {
+      "from": "e:photos.home.example.com",
+      "to": "c:homelab:traefik:traefik",
+      "kind": "via",
+      "label": "Reverse Proxy"
+    },
+    {
+      "from": "e:media.home.example.com",
+      "to": "c:homelab:media:jellyfin",
+      "kind": "routes"
+    },
+    {
+      "from": "e:media.home.example.com",
+      "to": "c:homelab:traefik:traefik",
+      "kind": "via",
+      "label": "Reverse Proxy"
+    },
+    {
+      "from": "e:dns.home.example.com",
+      "to": "c:homelab:dns:pihole",
+      "kind": "routes"
+    },
+    {
+      "from": "e:dns.home.example.com",
+      "to": "c:homelab:traefik:traefik",
+      "kind": "via",
+      "label": "Reverse Proxy"
+    },
+    {
+      "from": "e:homelab:53",
+      "to": "c:homelab:dns:pihole",
+      "kind": "routes"
+    },
+    {
+      "from": "e:git.example.com:2222",
+      "to": "c:build-01:git:forgejo",
+      "kind": "routes"
+    },
+    {
+      "from": "e:grafana.example.com",
+      "to": "e:auth.example.com",
+      "kind": "auth",
+      "label": "Keycloak-Login"
+    },
+    {
+      "from": "e:ci.example.com",
+      "to": "e:auth.example.com",
+      "kind": "auth",
+      "label": "Keycloak-Login"
+    },
+    {
+      "from": "c:web-01:shop:web",
+      "to": "e:registry.example.com",
+      "kind": "image",
+      "label": "Image-Quelle"
+    },
+    {
+      "from": "c:web-01:shop:api",
+      "to": "e:registry.example.com",
+      "kind": "image",
+      "label": "Image-Quelle"
+    },
+    {
+      "from": "c:web-01:shop:worker",
+      "to": "e:registry.example.com",
+      "kind": "image",
+      "label": "Image-Quelle"
+    },
+    {
+      "from": "c:web-01:shop:api",
+      "to": "e:auth.example.com",
+      "kind": "uses"
+    },
+    {
+      "from": "c:build-01:ci:woodpecker",
+      "to": "e:git.example.com",
+      "kind": "uses"
+    },
+    {
+      "from": "c:build-01:ci:agent",
+      "to": "e:registry.example.com",
+      "kind": "uses",
+      "label": "Images pushen"
+    },
+    {
+      "from": "c:web-01:monitoring:prometheus",
+      "to": "e:api.example.com",
+      "kind": "uses",
+      "label": "Metriken"
+    },
+    {
+      "from": "c:web-01:monitoring:prometheus",
+      "to": "e:git.example.com",
+      "kind": "uses",
+      "label": "Metriken"
+    },
+    {
+      "from": "c:homelab:media:jellyfin",
+      "to": "dev:nas",
+      "kind": "uses",
+      "label": "SMB /mnt/media"
+    },
+    {
+      "from": "c:homelab:photos:immich-server",
+      "to": "dev:nas",
+      "kind": "uses",
+      "label": "SMB /mnt/photos"
+    }
+  ]
+}
