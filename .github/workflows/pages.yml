@@ -27,7 +27,7 @@ jobs:
       - run: npm run build -w @infra3d/demo
         env:
           BASE_PATH: /${{ github.event.repository.name }}/
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: apps/demo/dist
 
