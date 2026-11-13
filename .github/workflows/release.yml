@@ -1,7 +1,8 @@
 name: Release
 
 # Changesets opens a "Version packages" PR from pending changesets.
-# Merging that PR publishes the bumped packages to npm.
+# Merging that PR publishes the bumped packages to npm through trusted publishing:
+# npm accepts this workflow's OIDC identity, so no npm token is stored anywhere.
 on:
   push:
     branches: [main]
@@ -16,9 +17,6 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
-    env:
-      # Skip until the NPM_TOKEN secret is configured
-      HAS_NPM_TOKEN: ${{ secrets.NPM_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -26,10 +24,11 @@ jobs:
           node-version: 22
           cache: npm
           registry-url: https://registry.npmjs.org
+      # Trusted publishing needs npm 11.5.1 or newer
+      - run: npm install -g npm@11
       - run: npm ci
       - run: npm run build -w infra3d -w infra3d-import-compose
       - uses: changesets/action@v1
-        if: env.HAS_NPM_TOKEN == 'true'
         with:
           version: npx changeset version
           publish: npx changeset publish
@@ -37,5 +36,4 @@ jobs:
           title: 'Version packages'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
