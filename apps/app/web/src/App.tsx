@@ -319,6 +319,10 @@ function Explorer({ topology, live, busy, onCheckNow, initialBroken = [], intro 
           <span><span className="dot" style={{ background: STATUS_COLORS.down }} /> down</span>
           <span><span className="dot" style={{ background: STATUS_COLORS.suspect }} /> suspect</span>
         </section>
+        <p className="credits">
+          <a href="https://github.com/SurfaceScratcher/infra3d" target="_blank" rel="noreferrer">infra3d</a> · MIT ·{' '}
+          <a href="THIRD_PARTY_LICENSES.md" target="_blank" rel="noreferrer">third-party licenses</a>
+        </p>
       </aside>
 
       <main className="stage">

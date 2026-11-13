@@ -80,3 +80,5 @@ code { background: #0f172a; padding: 1px 5px; border-radius: 4px; font-size: 12p
 .intro { color: var(--text); line-height: 1.5; }
 .simulation .action { align-self: flex-start; margin-top: 6px; }
 .simulation { display: flex; flex-direction: column; gap: 6px; }
+.credits { font-size: 11px; color: var(--muted); margin: -8px 0 0; }
+.credits a { color: var(--muted); }
