@@ -1,7 +1,7 @@
 name: Image
 
 # Builds the infra3d app image for amd64 and arm64 (Raspberry Pi) and pushes it to GHCR:
-# `:main` on every push to main, `:latest` and `:<version>` when the release workflow publishes infra3d.
+# `:main` on every push to main, `:latest` and `:<version>` when the release workflow sees a new app version.
 on:
   push:
     branches: [main]
