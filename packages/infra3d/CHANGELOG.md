@@ -1,5 +1,11 @@
 # infra3d
 
+## 0.4.0
+
+### Minor Changes
+
+- 61ab561: New default colours: the pastel palette shared with Fox & Rabbit, soft pastel nodes and edges on an ink-violet background, with periwinkle as the accent. The app also gets an icon. Pass `theme` to keep the previous colours.
+
 ## 0.3.1
 
 ### Patch Changes
