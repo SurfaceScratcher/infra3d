@@ -28,7 +28,7 @@ jobs:
       - run: npm install -g npm@11
       - run: npm ci
       - run: npm run build -w infra3d -w infra3d-import-compose
-      - uses: changesets/action@v1
+      - uses: changesets/action@v2
         with:
           version: npx changeset version
           publish: npx changeset publish
