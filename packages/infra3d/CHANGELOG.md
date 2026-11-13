@@ -4,7 +4,7 @@
 
 ### Minor Changes
 
-- 61ab561: New default colours: the pastel palette shared with Fox & Rabbit, soft pastel nodes and edges on an ink-violet background, with periwinkle as the accent. The app also gets an icon. Pass `theme` to keep the previous colours.
+- 61ab561: New default colours: soft pastel nodes and edges on a dark violet background, with periwinkle as the accent; the status colours for down and suspect stay clearly distinct. Pass `theme` to keep the previous colours.
 
 ## 0.3.1
 
