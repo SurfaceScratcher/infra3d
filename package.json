@@ -12,10 +12,12 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm test --workspaces --if-present",
     "import": "npm run build --silent -w infra3d -w infra3d-import-compose && node packages/import-compose/dist/cli.js",
-    "changeset": "changeset"
+    "changeset": "changeset",
+    "record-demo": "node scripts/record-demo.mjs"
   },
   "devDependencies": {
     "@changesets/cli": "^3.0.3",
+    "playwright-core": "^1.65.0",
     "typescript": "^7.0.2",
     "vitest": "^5.1.0"
   },

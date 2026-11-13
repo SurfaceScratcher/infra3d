@@ -27,6 +27,9 @@ npm run import -- ../my-stacks -o apps/app/web/src/data/local.json
 addresses or configs, including in test fixtures and screenshots. Use `example.com` and
 private address ranges.
 
+After visible UI changes, `npm run record-demo` re-records `docs/demo.gif` from the live demo
+(needs Chromium and ffmpeg, see the comment at the top of `scripts/record-demo.mjs`).
+
 ## Repository layout
 
 ```
