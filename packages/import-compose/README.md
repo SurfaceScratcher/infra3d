@@ -12,7 +12,7 @@ Without `-o` the topology goes to stdout. Without `-c`, `./infra3d.config.json` 
 
 | Source | Layout |
 | --- | --- |
-| `directory` | `<root>/<host>/<stack>/compose.yaml` (or `docker-compose.yml`) |
+| `directory` | detected: `<root>/compose.yaml` (one file), `<root>/<stack>/compose.yaml` (one host, e.g. Dockge or Komodo), or `<root>/<host>/<stack>/compose.yaml` |
 | `ansible` | `inventory/host_vars/<host>/main.yml` (`stacks`, `nas_backup_enabled`, `nas_mounts`), `inventory/group_vars/all/main.yml` (`domain`), `stacks/<host>/<stack>/docker-compose.yml` |
 
 `auto` (default) picks `ansible` when `<root>/inventory/host_vars` exists.
@@ -26,8 +26,11 @@ does not touch the graph logic in `buildTopology()`.
 - one container node per service, grouped by stack; databases get `role: "database"`
 - networks (stack-internal or external/shared) and `member` / `runs-on` edges
 - `depends_on` → `depends`
-- Traefik `Host()` rules → endpoints with `check: https://…`, routed `via` the host's Traefik container
-- published ports (except 80/443) → endpoints with `check: tcp://…`
+- reverse proxy routes → endpoints with `check: https://…`, routed `via` the host's proxy container:
+  Traefik `Host()` rules, [caddy-docker-proxy](https://github.com/lucaslorentz/caddy-docker-proxy) `caddy` labels,
+  [nginx-proxy](https://github.com/nginx-proxy/nginx-proxy) `VIRTUAL_HOST`
+- published TCP ports (except 80/443 and ports bound to 127.0.0.1) → endpoints with `check: tcp://…`
+- anything else (Nginx Proxy Manager, Cloudflare tunnels …) → `checks` in the config
 - hostnames below `domain` in environment, command or entrypoint → `uses` edges;
   images from a registry below `domain` → `image` edges
 
@@ -41,6 +44,9 @@ Start from [infra3d.config.example.json](infra3d.config.example.json).
 | Key | |
 | --- | --- |
 | `hosts` | `{ "<host>": { label, meta, uplink, address } }`, in layout order. Without it every host found is used |
+| `host` | name of the host in single-host layouts, default `host` |
+| `defaultAddress` | address for TCP checks of hosts without `address` / `meta.LAN` |
+| `checks` | `{ "jellyfin": "https://media.example.com", "notes/db": "tcp://10.0.0.5:5432" }`: endpoints for services whose route is not in the compose files. Keys are `service`, `stack/service` or `host/stack/service` |
 | `nodes`, `edges` | extra nodes and edges, e.g. sites, routers, NAS |
 | `domain` | base domain for `${DOMAIN}` / `{{ domain }}`; the ansible source reads it from group vars |
 | `backupTarget`, `nasTarget` | node ids for backup and network share edges |

@@ -7,10 +7,14 @@ services:
     restart: unless-stopped
     ports:
       - "8080:8080"
+    # Lets the container check ports published on the Docker host
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
-      # One folder per host, one subfolder per stack: stacks/<host>/<stack>/compose.yaml
-      # (or the root of an Ansible repository with inventory/ and stacks/)
-      - ./stacks:/stacks:ro
+      # Your stacks, e.g. /opt/stacks (Dockge, Komodo) with one folder per stack. Also works:
+      # a single compose.yaml, one folder per host (stacks/<host>/<stack>/compose.yaml)
+      # or the root of an Ansible repository with inventory/ and stacks/
+      - /opt/stacks:/stacks:ro
       # Optional: config/infra3d.config.json with hosts, sites, uplinks and special cases
       # (see packages/import-compose/infra3d.config.example.json)
       - ./config:/config:ro
@@ -19,4 +23,5 @@ services:
       # NTFY_URL: https://ntfy.sh/my-homelab
       # WEBHOOK_URL: https://example.com/hooks/infra3d
       # INFRA3D_BASE_URL: https://infra.example.com
+      # INFRA3D_HOST: homeserver
       INFRA3D_INTERVAL: "60"

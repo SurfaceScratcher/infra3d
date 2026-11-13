@@ -1,0 +1,9 @@
+name: homeserver
+services:
+  vaultwarden:
+    image: vaultwarden/server:1.32
+    labels:
+      - "traefik.http.routers.vw.rule=Host(`vault.example.com`) || Host(`pw.example.com`)"
+  traefik:
+    image: traefik:v3
+    ports: ["443:443"]

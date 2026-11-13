@@ -7,7 +7,7 @@ every endpoint and shows hosts, networks, containers and endpoints as stacked 3D
 rotate, zoom and click through.
 
 - **No drawing, no scanning:** the topology comes straight from your compose files (plain stack
-  folders or an Ansible repository), including Traefik routes, published ports and `depends_on`.
+  folders or an Ansible repository), including reverse proxy routes, published ports and `depends_on`.
 - **Root-cause hints:** when endpoints fail, the dependency graph narrows the failure down to the
   containers, networks or hosts that can explain it, and tells you when the fault must be in the
   service itself.
@@ -30,15 +30,19 @@ services:
     restart: unless-stopped
     ports:
       - "8080:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # to check ports on this host
     volumes:
-      - ./stacks:/stacks:ro        # stacks/<host>/<stack>/compose.yaml
+      - /opt/stacks:/stacks:ro     # one folder per stack, or per host and stack
       - ./config:/config:ro        # optional: config/infra3d.config.json
     environment:
       NTFY_URL: https://ntfy.sh/my-homelab   # optional
 ```
 
-`docker compose up -d`, then open http://localhost:8080. Mount the root of an Ansible repository
-(with `inventory/` and `stacks/`) at `/stacks` instead and it is detected automatically.
+`docker compose up -d`, then open http://localhost:8080. The layout is detected: a single
+`compose.yaml`, one folder per stack (Dockge, Komodo), one folder per host and stack, or the root of
+an Ansible repository. Routes come from Traefik, Caddy (caddy-docker-proxy) and nginx-proxy; for
+anything else, add [`checks`](packages/import-compose#config) to the config.
 All options are in [apps/app](apps/app#configuration).
 
 ## React component

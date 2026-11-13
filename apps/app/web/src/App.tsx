@@ -150,6 +150,12 @@ function Explorer({ topology, live, busy, onCheckNow }: { topology: Topology; li
               {reachable} of {checks.length} endpoints · checked {clock(live.checkedAt)} · every {live.intervalSec}s
             </p>
             {live.source.error && <p className="error small">Topology: {live.source.error} (showing the last good one)</p>}
+            {live.source.warnings.length > 0 && (
+              <details className="small">
+                <summary className="muted">{live.source.warnings.length} import warning{live.source.warnings.length > 1 ? 's' : ''}</summary>
+                <ul>{live.source.warnings.map((w) => <li key={w}>{w}</li>)}</ul>
+              </details>
+            )}
             {live.down.length > 1 && (live.causes[0]?.count ?? 0) > 1 && (
               <p className="small">
                 Most likely shared cause:{' '}
