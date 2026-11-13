@@ -39,9 +39,22 @@ network the container can reach them from (the default bridge network usually wo
 | `NTFY_TOKEN` | | access token for a protected ntfy topic |
 | `WEBHOOK_URL` | | receives `{ event: "down" \| "up", title, message, endpoints, causes, url }` as JSON |
 | `INFRA3D_BASE_URL` | | public URL of the app, used as the click target in notifications |
+| `INFRA3D_AUTH` | | `user:password` for HTTP Basic Auth on UI and API (`/healthz` stays open) |
 | `PORT` | `8080` | |
 
 Self-signed certificates: set `NODE_TLS_REJECT_UNAUTHORIZED=0` to accept them.
+
+## Security
+
+The UI shows your whole infrastructure: hosts, containers, internal networks, domains and which
+of them are down. Do not expose it to the internet without protection. Either set `INFRA3D_AUTH`
+or put it behind the authentication of your reverse proxy (Authelia, Authentik, Cloudflare Access …).
+
+- The stacks are mounted read-only and the importer never copies environment values, secrets
+  or volumes into the topology. Only structure is kept: services, images, networks, routes, ports.
+- infra3d makes no outgoing requests besides your own health checks and notifications.
+  No telemetry, no update checks.
+- The container runs as an unprivileged user and needs no Docker socket.
 
 ## API
 
