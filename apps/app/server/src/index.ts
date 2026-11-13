@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'node:crypto';
 import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
@@ -51,15 +52,25 @@ function serveStatic(urlPath: string, res: http.ServerResponse) {
   fs.createReadStream(file).pipe(res);
 }
 
+const expectedAuth = config.auth ? Buffer.from(`Basic ${Buffer.from(config.auth).toString('base64')}`) : null;
+
+/** HTTP Basic Auth when INFRA3D_AUTH is set. */
+function authorized(req: http.IncomingMessage) {
+  if (!expectedAuth) return true;
+  const given = Buffer.from(req.headers.authorization ?? '');
+  return given.length === expectedAuth.length && timingSafeEqual(given, expectedAuth);
+}
+
 const json = (res: http.ServerResponse, body: unknown, status = 200) =>
   res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }).end(JSON.stringify(body));
 
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url ?? '/', 'http://localhost');
   try {
+    if (url.pathname === '/healthz') return json(res, { ok: true });
+    if (!authorized(req)) return void res.writeHead(401, { 'WWW-Authenticate': 'Basic realm="infra3d", charset="UTF-8"' }).end();
     if (url.pathname === '/api/state' && req.method === 'GET') return json(res, apiState());
     if (url.pathname === '/api/check' && req.method === 'POST') return (await cycle(), json(res, apiState()));
-    if (url.pathname === '/healthz') return json(res, { ok: true });
     if (url.pathname.startsWith('/api/')) return json(res, { error: 'not found' }, 404);
     if (req.method !== 'GET' && req.method !== 'HEAD') return void res.writeHead(405).end();
     serveStatic(url.pathname, res);
@@ -71,6 +82,8 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(config.port, () => {
   console.log(`infra3d listening on :${config.port}, ${source.kind === 'file' ? 'topology' : 'stacks'} from ${source.path}`);
+  if (config.auth && !config.auth.includes(':')) console.warn('INFRA3D_AUTH should be user:password');
+  if (!config.auth) console.log('no INFRA3D_AUTH set: the UI is open to everyone who can reach this port');
   void cycle().then(() => {
     const topo = topology();
     if (source.error) console.warn(`topology: ${source.error}`);

@@ -43,7 +43,9 @@ services:
 `compose.yaml`, one folder per stack (Dockge, Komodo), one folder per host and stack, or the root of
 an Ansible repository. Routes come from Traefik, Caddy (caddy-docker-proxy) and nginx-proxy; for
 anything else, add [`checks`](packages/import-compose#config) to the config.
-All options are in [apps/app](apps/app#configuration).
+All options are in [apps/app](apps/app#configuration). The UI shows your whole infrastructure, so
+keep it on your LAN or protect it with `INFRA3D_AUTH` or your reverse proxy's login, see
+[Security](apps/app#security). Read-only, no telemetry, no Docker socket needed.
 
 ## React component
 

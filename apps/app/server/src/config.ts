@@ -30,6 +30,8 @@ export const config = {
   ntfyToken: env.NTFY_TOKEN || null,
   /** Receives a JSON POST whenever endpoints go down or recover. */
   webhookUrl: env.WEBHOOK_URL || null,
+  /** `user:password` for HTTP Basic Auth on the UI and API; /healthz stays open. */
+  auth: env.INFRA3D_AUTH || null,
   /** Public URL of this app, used as the click target in notifications. */
   baseUrl: env.INFRA3D_BASE_URL || null,
   webDir: env.INFRA3D_WEB_DIR || new URL('../../web/dist/', import.meta.url).pathname,
