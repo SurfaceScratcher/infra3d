@@ -1,5 +1,5 @@
 {
-  "name": "Beispiel-Infrastruktur",
+  "name": "Example infrastructure",
   "columns": [
     "web-01",
     "build-01",
@@ -8,11 +8,11 @@
   "layers": [
     {
       "id": "physical",
-      "label": "Hardware & Standorte"
+      "label": "Hardware & sites"
     },
     {
       "id": "network",
-      "label": "Netzwerke"
+      "label": "Networks"
     },
     {
       "id": "container",
@@ -20,7 +20,7 @@
     },
     {
       "id": "endpoint",
-      "label": "Endpunkte"
+      "label": "Endpoints"
     }
   ],
   "nodes": [
@@ -36,11 +36,11 @@
     },
     {
       "id": "site:dc",
-      "label": "Rechenzentrum",
+      "label": "Data center",
       "type": "site",
       "layer": "physical",
       "meta": {
-        "Standort": "Frankfurt"
+        "Location": "Frankfurt"
       },
       "offset": [
         0,
@@ -55,7 +55,7 @@
       "column": "homelab",
       "meta": {
         "LAN": "10.0.0.1",
-        "Funktion": "Router, Firewall, WireGuard"
+        "Function": "Router, Firewall, WireGuard"
       },
       "offset": [
         0,
@@ -70,7 +70,7 @@
       "column": "homelab",
       "meta": {
         "LAN": "10.0.0.20",
-        "Funktion": "Backups, Medien (SMB)"
+        "Function": "Backups, media (SMB)"
       },
       "offset": [
         7,
@@ -84,7 +84,7 @@
       "layer": "network",
       "column": "homelab",
       "meta": {
-        "Typ": "LAN"
+        "Type": "LAN"
       }
     },
     {
@@ -95,7 +95,7 @@
       "column": "web-01",
       "meta": {
         "Hardware": "VPS 4 vCPU / 8 GB",
-        "Rolle": "Produktion",
+        "Role": "Production",
         "Stacks": 4
       }
     },
@@ -107,7 +107,7 @@
       "column": "web-01",
       "meta": {
         "Host": "web-01",
-        "Typ": "extern (geteilt)"
+        "Type": "external (shared)"
       }
     },
     {
@@ -130,7 +130,7 @@
       "column": "web-01",
       "meta": {
         "Host": "web-01",
-        "Typ": "Stack-intern"
+        "Type": "stack-internal"
       }
     },
     {
@@ -178,9 +178,9 @@
       "group": "shop",
       "meta": {
         "Stack": "shop",
-        "Image": "postgres:17-alpine",
-        "Rolle": "Datenhaltung"
-      }
+        "Image": "postgres:17-alpine"
+      },
+      "role": "database"
     },
     {
       "id": "c:web-01:shop:redis",
@@ -191,9 +191,9 @@
       "group": "shop",
       "meta": {
         "Stack": "shop",
-        "Image": "redis:7-alpine",
-        "Rolle": "Datenhaltung"
-      }
+        "Image": "redis:7-alpine"
+      },
+      "role": "database"
     },
     {
       "id": "n:web-01:auth_internal",
@@ -203,7 +203,7 @@
       "column": "web-01",
       "meta": {
         "Host": "web-01",
-        "Typ": "Stack-intern"
+        "Type": "stack-internal"
       }
     },
     {
@@ -227,9 +227,9 @@
       "group": "auth",
       "meta": {
         "Stack": "auth",
-        "Image": "postgres:17-alpine",
-        "Rolle": "Datenhaltung"
-      }
+        "Image": "postgres:17-alpine"
+      },
+      "role": "database"
     },
     {
       "id": "n:web-01:monitoring_internal",
@@ -239,7 +239,7 @@
       "column": "web-01",
       "meta": {
         "Host": "web-01",
-        "Typ": "Stack-intern"
+        "Type": "stack-internal"
       }
     },
     {
@@ -274,7 +274,7 @@
       "column": "build-01",
       "meta": {
         "Hardware": "VPS 8 vCPU / 16 GB",
-        "Rolle": "Entwicklung & CI",
+        "Role": "Development & CI",
         "Stacks": 4
       }
     },
@@ -286,7 +286,7 @@
       "column": "build-01",
       "meta": {
         "Host": "build-01",
-        "Typ": "extern (geteilt)"
+        "Type": "external (shared)"
       }
     },
     {
@@ -309,7 +309,7 @@
       "column": "build-01",
       "meta": {
         "Host": "build-01",
-        "Typ": "Stack-intern"
+        "Type": "stack-internal"
       }
     },
     {
@@ -333,9 +333,9 @@
       "group": "git",
       "meta": {
         "Stack": "git",
-        "Image": "postgres:17-alpine",
-        "Rolle": "Datenhaltung"
-      }
+        "Image": "postgres:17-alpine"
+      },
+      "role": "database"
     },
     {
       "id": "n:build-01:ci_internal",
@@ -345,7 +345,7 @@
       "column": "build-01",
       "meta": {
         "Host": "build-01",
-        "Typ": "Stack-intern"
+        "Type": "stack-internal"
       }
     },
     {
@@ -392,7 +392,7 @@
       "column": "homelab",
       "meta": {
         "Hardware": "Mini-PC",
-        "Rolle": "Heimserver (LAN-only)",
+        "Role": "Home server (LAN only)",
         "LAN": "10.0.0.10",
         "Stacks": 4
       }
@@ -405,7 +405,7 @@
       "column": "homelab",
       "meta": {
         "Host": "homelab",
-        "Typ": "extern (geteilt)"
+        "Type": "external (shared)"
       }
     },
     {
@@ -428,7 +428,7 @@
       "column": "homelab",
       "meta": {
         "Host": "homelab",
-        "Typ": "Stack-intern"
+        "Type": "stack-internal"
       }
     },
     {
@@ -464,9 +464,9 @@
       "group": "photos",
       "meta": {
         "Stack": "photos",
-        "Image": "ghcr.io/immich-app/postgres:14",
-        "Rolle": "Datenhaltung"
-      }
+        "Image": "ghcr.io/immich-app/postgres:14"
+      },
+      "role": "database"
     },
     {
       "id": "c:homelab:photos:immich-redis",
@@ -477,9 +477,9 @@
       "group": "photos",
       "meta": {
         "Stack": "photos",
-        "Image": "valkey/valkey:8",
-        "Rolle": "Datenhaltung"
-      }
+        "Image": "valkey/valkey:8"
+      },
+      "role": "database"
     },
     {
       "id": "c:homelab:media:jellyfin",
@@ -513,7 +513,7 @@
       "column": "web-01",
       "meta": {
         "URL": "https://shop.example.com",
-        "Zugang": "Traefik (HTTPS)"
+        "Access": "Traefik (HTTPS)"
       }
     },
     {
@@ -524,7 +524,7 @@
       "column": "web-01",
       "meta": {
         "URL": "https://api.example.com",
-        "Zugang": "Traefik (HTTPS)"
+        "Access": "Traefik (HTTPS)"
       }
     },
     {
@@ -535,7 +535,7 @@
       "column": "web-01",
       "meta": {
         "URL": "https://auth.example.com",
-        "Zugang": "Traefik (HTTPS)"
+        "Access": "Traefik (HTTPS)"
       }
     },
     {
@@ -546,7 +546,7 @@
       "column": "web-01",
       "meta": {
         "URL": "https://grafana.example.com",
-        "Zugang": "Traefik (HTTPS)"
+        "Access": "Traefik (HTTPS)"
       }
     },
     {
@@ -557,7 +557,7 @@
       "column": "build-01",
       "meta": {
         "URL": "https://git.example.com",
-        "Zugang": "Traefik (HTTPS)"
+        "Access": "Traefik (HTTPS)"
       }
     },
     {
@@ -568,7 +568,7 @@
       "column": "build-01",
       "meta": {
         "URL": "https://ci.example.com",
-        "Zugang": "Traefik (HTTPS)"
+        "Access": "Traefik (HTTPS)"
       }
     },
     {
@@ -579,7 +579,7 @@
       "column": "build-01",
       "meta": {
         "URL": "https://registry.example.com",
-        "Zugang": "Traefik (HTTPS)"
+        "Access": "Traefik (HTTPS)"
       }
     },
     {
@@ -590,7 +590,7 @@
       "column": "homelab",
       "meta": {
         "URL": "https://photos.home.example.com",
-        "Zugang": "Traefik (HTTPS)"
+        "Access": "Traefik (HTTPS)"
       }
     },
     {
@@ -601,7 +601,7 @@
       "column": "homelab",
       "meta": {
         "URL": "https://media.home.example.com",
-        "Zugang": "Traefik (HTTPS)"
+        "Access": "Traefik (HTTPS)"
       }
     },
     {
@@ -612,7 +612,7 @@
       "column": "homelab",
       "meta": {
         "URL": "https://dns.home.example.com",
-        "Zugang": "Traefik (HTTPS)"
+        "Access": "Traefik (HTTPS)"
       }
     },
     {
@@ -622,7 +622,7 @@
       "layer": "endpoint",
       "column": "homelab",
       "meta": {
-        "Zugang": "Port direkt",
+        "Access": "direct port",
         "Port": "53"
       }
     },
@@ -633,7 +633,7 @@
       "layer": "endpoint",
       "column": "build-01",
       "meta": {
-        "Zugang": "Port direkt",
+        "Access": "direct port",
         "Port": "2222"
       }
     }
@@ -956,7 +956,7 @@
       "from": "e:shop.example.com",
       "to": "c:web-01:traefik:traefik",
       "kind": "via",
-      "label": "Reverse Proxy"
+      "label": "reverse proxy"
     },
     {
       "from": "e:api.example.com",
@@ -967,7 +967,7 @@
       "from": "e:api.example.com",
       "to": "c:web-01:traefik:traefik",
       "kind": "via",
-      "label": "Reverse Proxy"
+      "label": "reverse proxy"
     },
     {
       "from": "e:auth.example.com",
@@ -978,7 +978,7 @@
       "from": "e:auth.example.com",
       "to": "c:web-01:traefik:traefik",
       "kind": "via",
-      "label": "Reverse Proxy"
+      "label": "reverse proxy"
     },
     {
       "from": "e:grafana.example.com",
@@ -989,7 +989,7 @@
       "from": "e:grafana.example.com",
       "to": "c:web-01:traefik:traefik",
       "kind": "via",
-      "label": "Reverse Proxy"
+      "label": "reverse proxy"
     },
     {
       "from": "e:git.example.com",
@@ -1000,7 +1000,7 @@
       "from": "e:git.example.com",
       "to": "c:build-01:traefik:traefik",
       "kind": "via",
-      "label": "Reverse Proxy"
+      "label": "reverse proxy"
     },
     {
       "from": "e:ci.example.com",
@@ -1011,7 +1011,7 @@
       "from": "e:ci.example.com",
       "to": "c:build-01:traefik:traefik",
       "kind": "via",
-      "label": "Reverse Proxy"
+      "label": "reverse proxy"
     },
     {
       "from": "e:registry.example.com",
@@ -1022,7 +1022,7 @@
       "from": "e:registry.example.com",
       "to": "c:build-01:traefik:traefik",
       "kind": "via",
-      "label": "Reverse Proxy"
+      "label": "reverse proxy"
     },
     {
       "from": "e:photos.home.example.com",
@@ -1033,7 +1033,7 @@
       "from": "e:photos.home.example.com",
       "to": "c:homelab:traefik:traefik",
       "kind": "via",
-      "label": "Reverse Proxy"
+      "label": "reverse proxy"
     },
     {
       "from": "e:media.home.example.com",
@@ -1044,7 +1044,7 @@
       "from": "e:media.home.example.com",
       "to": "c:homelab:traefik:traefik",
       "kind": "via",
-      "label": "Reverse Proxy"
+      "label": "reverse proxy"
     },
     {
       "from": "e:dns.home.example.com",
@@ -1055,7 +1055,7 @@
       "from": "e:dns.home.example.com",
       "to": "c:homelab:traefik:traefik",
       "kind": "via",
-      "label": "Reverse Proxy"
+      "label": "reverse proxy"
     },
     {
       "from": "e:homelab:53",
@@ -1071,31 +1071,31 @@
       "from": "e:grafana.example.com",
       "to": "e:auth.example.com",
       "kind": "auth",
-      "label": "Keycloak-Login"
+      "label": "Keycloak login"
     },
     {
       "from": "e:ci.example.com",
       "to": "e:auth.example.com",
       "kind": "auth",
-      "label": "Keycloak-Login"
+      "label": "Keycloak login"
     },
     {
       "from": "c:web-01:shop:web",
       "to": "e:registry.example.com",
       "kind": "image",
-      "label": "Image-Quelle"
+      "label": "image source"
     },
     {
       "from": "c:web-01:shop:api",
       "to": "e:registry.example.com",
       "kind": "image",
-      "label": "Image-Quelle"
+      "label": "image source"
     },
     {
       "from": "c:web-01:shop:worker",
       "to": "e:registry.example.com",
       "kind": "image",
-      "label": "Image-Quelle"
+      "label": "image source"
     },
     {
       "from": "c:web-01:shop:api",
@@ -1111,19 +1111,19 @@
       "from": "c:build-01:ci:agent",
       "to": "e:registry.example.com",
       "kind": "uses",
-      "label": "Images pushen"
+      "label": "push images"
     },
     {
       "from": "c:web-01:monitoring:prometheus",
       "to": "e:api.example.com",
       "kind": "uses",
-      "label": "Metriken"
+      "label": "metrics"
     },
     {
       "from": "c:web-01:monitoring:prometheus",
       "to": "e:git.example.com",
       "kind": "uses",
-      "label": "Metriken"
+      "label": "metrics"
     },
     {
       "from": "c:homelab:media:jellyfin",

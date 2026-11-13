@@ -1,30 +1,30 @@
 # infra3d
 
-React-Komponente, die IT-Infrastruktur als gestapelte 3D-Ebenen darstellt
-(Hardware → Netzwerke → Container → Endpunkte). Ein Klick auf einen Knoten zeigt,
-was er **braucht** (blau) und was bei seinem Ausfall **mit betroffen** ist (rot).
+A React component that shows IT infrastructure as stacked 3D layers
+(hardware → networks → containers → endpoints) you can rotate, zoom and click through.
+Selecting a node highlights what it **needs** (blue) and what is **affected** when it fails (red).
 
 ```bash
 npm install
-npm run dev                   # zeigt die Beispiel-Topologie (src/data/example.json)
+npm run dev        # demo with the example topology (apps/demo/src/data/example.json)
 ```
 
-Eigene Daten: `infra3d.config.example.json` nach `infra3d.config.json` kopieren,
-anpassen und den Importer laufen lassen. Liegt `src/data/local.json` vor, zeigt die
-Demo diese statt des Beispiels. Beide Dateien sind gitignored.
+## Repository layout
+
+| Path | What |
+| --- | --- |
+| `packages/infra3d` | The library (`infra3d` on npm): `<InfraScene>`, layout, graph helpers |
+| `packages/import-compose` | Importer that builds a topology from Docker Compose files |
+| `apps/demo` | Demo app, also published as the live demo |
+
+## Usage
 
 ```bash
-cp infra3d.config.example.json infra3d.config.json
-npm run import:server-stack   # ../server-stack → src/data/local.json
+npm install infra3d three @react-three/fiber @react-three/drei
 ```
 
-## Einbinden
-
-Alles Wiederverwendbare liegt in `src/infra3d/` (Abhängigkeiten: `three`,
-`@react-three/fiber`, `@react-three/drei`). `src/App.tsx` ist nur die Demo.
-
 ```tsx
-import { InfraScene, type Topology } from './infra3d';
+import { InfraScene, type Topology } from 'infra3d';
 
 <InfraScene
   topology={topology}
@@ -35,34 +35,38 @@ import { InfraScene, type Topology } from './infra3d';
 />
 ```
 
-## Datenmodell
+The scene fills its parent, so give the parent a height.
+Requires React 19, `@react-three/fiber` 9 and `@react-three/drei` 10.
+
+`infra3d/core` contains the framework-free part (types, layout, graph traversal)
+and can be used in Node without React or three.js.
+
+## Data model
 
 ```ts
 { layers: [{ id, label }], columns?: string[],
-  nodes:  [{ id, label, type, layer, column?, group?, offset?, meta? }],
+  nodes:  [{ id, label, type, layer, column?, group?, role?, offset?, meta? }],
   edges:  [{ from, to, kind, label? }] }
 ```
 
-Kanten zeigen immer vom Abhängigen zur Abhängigkeit (Endpunkt → Container →
-Netz → Host → Standort). Daraus ergeben sich beide Richtungen der Hervorhebung.
-`backup`-Kanten pflanzen einen Ausfall nicht weiter fort.
+Edges always point from the dependent to its dependency
+(endpoint → container → network → host → site). Both highlight directions follow from that.
+`backup` edges do not propagate a failure further.
 
-Layout: Knoten der Ankerebene (`container`) liegen im Raster — Spalte = `column`
-(Host), Zeile = `group` (Stack). Alle anderen Knoten landen im Schwerpunkt ihrer
-Nachbarn, dadurch stehen Netze und Endpunkte über bzw. unter „ihren“ Containern.
+Layout: nodes of the anchor layer (`container`) sit on a grid, column = `column` (host),
+row = `group` (stack). All other nodes are placed at the centroid of their neighbours,
+so networks and endpoints end up above or below "their" containers.
 
-## Importer
+## Your own data
 
-`scripts/import-server-stack.mjs` liest `inventory/host_vars/*/main.yml` und
-`stacks/<host>/<stack>/docker-compose.yml` und leitet ab:
+Copy `packages/import-compose/infra3d.config.example.json` to `infra3d.config.json`
+in the repository root, adjust it and run the importer. If `apps/demo/src/data/local.json`
+exists, the demo shows it instead of the example. Both files are gitignored.
 
-- Container, Docker-Netze, `depends_on`
-- Endpunkte aus Traefik-`Host()`-Regeln und veröffentlichten Ports
-- Querverweise: Images aus `git.<domain>`, Dienst-URLs in `environment`
-- Backups (`nas_backup_enabled`) und NAS-Mounts (`nas_mounts`)
+```bash
+npm run import:server-stack   # ../server-stack → apps/demo/src/data/local.json
+```
 
-Was sich nicht aus den Dateien ableiten lässt, steht in `infra3d.config.json`:
-Hosts mit Hardware und Uplink, zusätzliche Knoten und Kanten (Standorte, Router,
-NAS), Backup-/NAS-Ziel, Sonderfälle für Netze (`networkOverrides`), Adressen in
-Env-Werten, die auf Geräte zeigen (`addressLinks`), und Auth-Middlewares.
-Env-Werte und Vault-Inhalte werden nicht übernommen.
+## License
+
+MIT

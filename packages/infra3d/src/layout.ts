@@ -1,9 +1,9 @@
-import type { EdgeKind, InfraNode, Topology } from './types';
+import type { EdgeKind, InfraNode, Topology } from './types.js';
 
 export type Vec3 = [number, number, number];
 
 export interface LayoutOptions {
-  /** Ebene, deren Knoten im Raster angeordnet werden; alle anderen richten sich danach. */
+  /** Layer whose nodes are placed on a grid; all other layers follow from it. */
   anchorLayer?: string;
   layerGap?: number;
   itemGap?: number;
@@ -19,7 +19,7 @@ export interface Layout {
   bounds: { minX: number; maxX: number; minZ: number; maxZ: number };
 }
 
-/** Wie stark eine Kante einen Knoten zu seinem Nachbarn zieht. */
+/** How strongly an edge pulls a node towards its neighbour. */
 const PULL: Partial<Record<EdgeKind, number>> = {
   routes: 1,
   member: 1,
@@ -35,7 +35,7 @@ export function computeLayout(topo: Topology, opts: LayoutOptions = {}): Layout 
   const positions = new Map<string, Vec3>();
   const columnIds = topo.columns ?? [...new Set(topo.nodes.map((n) => n.column).filter(Boolean) as string[])];
 
-  // 1. Ankerebene: pro Spalte ein Raster, jede Gruppe eine Zeile.
+  // 1. Anchor layer: one grid per column, one row per group.
   const anchors = topo.nodes.filter((n) => n.layer === anchorLayer);
   const colGroups = columnIds.map((col) => {
     const groups = new Map<string, InfraNode[]>();
@@ -67,8 +67,8 @@ export function computeLayout(topo: Topology, opts: LayoutOptions = {}): Layout 
   }
   const columnX = new Map(columns.map((c) => [c.id, c.x]));
 
-  // 2. Restliche Knoten: gewichteter Schwerpunkt bereits platzierter Nachbarn,
-  //    Ebenen in Reihenfolge ihres Abstands zur Ankerebene.
+  // 2. Remaining nodes: weighted centroid of already placed neighbours,
+  //    layers in order of their distance to the anchor layer.
   const adj = new Map<string, { id: string; w: number }[]>();
   for (const e of topo.edges) {
     const w = PULL[e.kind] ?? 0;
@@ -111,7 +111,7 @@ export function computeLayout(topo: Topology, opts: LayoutOptions = {}): Layout 
   }
   for (const n of unplaced) place(n, n.column ? columnX.get(n.column) ?? 0 : 0, 0);
 
-  // 3. Überlappungen innerhalb einer Ebene auseinanderschieben (Ankerebene bleibt fix).
+  // 3. Push apart overlapping nodes within a layer (the anchor layer stays fixed).
   const byLayer = new Map<string, InfraNode[]>();
   for (const n of topo.nodes) {
     if (n.layer === anchorLayer) continue;

@@ -1,33 +1,33 @@
 import { useMemo, useState } from 'react';
-import { InfraScene, NODE_COLORS, DOWN_COLOR, UP_COLOR, computeHighlight, neighbors } from './infra3d';
-import type { HighlightMode, InfraEdge, NodeType, Topology } from './infra3d';
+import { InfraScene, NODE_COLORS, DOWN_COLOR, UP_COLOR, computeHighlight, neighbors } from 'infra3d';
+import type { HighlightMode, InfraEdge, NodeType, Topology } from 'infra3d';
 import example from './data/example.json';
 
-// Lokale Daten (vom Importer erzeugt, gitignored) haben Vorrang vor dem Beispiel.
+// Local data (written by the importer, gitignored) takes precedence over the example.
 const local = Object.values(import.meta.glob<Topology>('./data/local.json', { eager: true, import: 'default' }))[0];
 const topology = local ?? (example as Topology);
 
 const TYPE_LABEL: Record<NodeType, string> = {
-  site: 'Standort',
-  device: 'Gerät',
+  site: 'Site',
+  device: 'Device',
   host: 'Host',
-  network: 'Netzwerk',
+  network: 'Network',
   container: 'Container',
-  endpoint: 'Endpunkt',
+  endpoint: 'Endpoint',
 };
 
 const EDGE_LABEL: Record<InfraEdge['kind'], [string, string]> = {
-  // [ausgehend, eingehend]
-  routes: ['routet auf', 'erreichbar über'],
-  via: ['läuft über', 'leitet weiter'],
-  auth: ['Login über', 'schützt'],
-  member: ['im Netz', 'Mitglied'],
-  'runs-on': ['läuft auf', 'trägt Netz'],
-  depends: ['braucht', 'gebraucht von'],
-  uses: ['nutzt', 'genutzt von'],
-  image: ['Image aus', 'liefert Image an'],
-  uplink: ['angebunden an', 'bindet an'],
-  backup: ['sichert nach', 'Backup von'],
+  // [outgoing, incoming]
+  routes: ['routes to', 'reachable via'],
+  via: ['goes through', 'forwards'],
+  auth: ['login via', 'protects'],
+  member: ['in network', 'member'],
+  'runs-on': ['runs on', 'hosts network'],
+  depends: ['depends on', 'needed by'],
+  uses: ['uses', 'used by'],
+  image: ['image from', 'provides image to'],
+  uplink: ['connected to', 'connects'],
+  backup: ['backs up to', 'backup of'],
 };
 
 const nodeById = new Map(topology.nodes.map((n) => [n.id, n]));
@@ -58,11 +58,11 @@ export function App() {
       <aside className="panel">
         <header>
           <h1>Infra 3D</h1>
-          <p className="muted">{topology.name} · {topology.nodes.length} Knoten · {topology.edges.length} Verbindungen</p>
+          <p className="muted">{topology.name} · {topology.nodes.length} nodes · {topology.edges.length} connections</p>
         </header>
 
         <section>
-          <input className="search" placeholder="Suchen: api, proxy, homelab …" value={query} onChange={(e) => setQuery(e.target.value)} />
+          <input className="search" placeholder="Search: api, proxy, homelab …" value={query} onChange={(e) => setQuery(e.target.value)} />
           {results.length > 0 && (
             <ul className="results">
               {results.map((n) => (
@@ -77,28 +77,28 @@ export function App() {
         </section>
 
         <section>
-          <h2>Ebenen</h2>
+          <h2>Layers</h2>
           {[...topology.layers].reverse().map((l) => (
             <label key={l.id} className="check">
               <input type="checkbox" checked={!hiddenLayers.includes(l.id)} onChange={() => toggleLayer(l.id)} /> {l.label}
             </label>
           ))}
           <label className="check">
-            <input type="checkbox" checked={showAll} onChange={(e) => setShowAll(e.target.checked)} /> Alle Beschriftungen
+            <input type="checkbox" checked={showAll} onChange={(e) => setShowAll(e.target.checked)} /> All labels
           </label>
         </section>
 
         <section>
-          <h2>Bei Auswahl zeigen</h2>
+          <h2>On selection show</h2>
           <div className="seg">
             {(['deps', 'impact', 'both'] as const).map((m) => (
               <button key={m} className={mode === m ? 'on' : ''} onClick={() => setMode(m)}>
-                {m === 'deps' ? 'Braucht' : m === 'impact' ? 'Betrifft' : 'Beides'}
+                {m === 'deps' ? 'Needs' : m === 'impact' ? 'Affects' : 'Both'}
               </button>
             ))}
           </div>
           <p className="legend">
-            <span style={{ color: DOWN_COLOR }}>━ braucht</span> (Abhängigkeiten) · <span style={{ color: UP_COLOR }}>━ betrifft</span> (fällt mit aus)
+            <span style={{ color: DOWN_COLOR }}>━ needs</span> (dependencies) · <span style={{ color: UP_COLOR }}>━ affects</span> (fails with it)
           </p>
         </section>
 
@@ -115,18 +115,18 @@ export function App() {
             )}
             {highlight && (
               <p className="stats">
-                <span style={{ color: DOWN_COLOR }}>braucht {highlight.down.nodes.size - 1}</span> ·{' '}
-                <span style={{ color: UP_COLOR }}>betrifft {highlight.up.nodes.size - 1}</span>
+                <span style={{ color: DOWN_COLOR }}>needs {highlight.down.nodes.size - 1}</span> ·{' '}
+                <span style={{ color: UP_COLOR }}>affects {highlight.up.nodes.size - 1}</span>
               </p>
             )}
-            <EdgeList title="Hängt ab von" edges={nb.outgoing} dir={0} onPick={setSelected} />
-            <EdgeList title="Wird genutzt von" edges={nb.incoming} dir={1} onPick={setSelected} />
-            <button className="clear" onClick={() => setSelected(null)}>Auswahl aufheben</button>
+            <EdgeList title="Depends on" edges={nb.outgoing} dir={0} onPick={setSelected} />
+            <EdgeList title="Used by" edges={nb.incoming} dir={1} onPick={setSelected} />
+            <button className="clear" onClick={() => setSelected(null)}>Clear selection</button>
           </section>
         ) : (
           <section className="hint muted">
-            Klick auf einen Knoten zeigt, was er <b>braucht</b> und was bei seinem Ausfall <b>mit betroffen</b> ist.
-            Ziehen = drehen, Rechtsklick-Ziehen = verschieben, Mausrad = zoomen.
+            Click a node to see what it <b>needs</b> and what is <b>affected</b> when it fails.
+            Drag to rotate, right-drag to pan, scroll to zoom.
           </section>
         )}
 
