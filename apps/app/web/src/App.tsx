@@ -59,10 +59,15 @@ export function App() {
   return DEMO ? <Demo /> : <Live />;
 }
 
+/** The demo opens in the middle of an outage, so the point is clear before anyone clicks. */
+const DEMO_OUTAGE = ['h:homelab'];
+
 function Demo() {
   const [topology, setTopology] = useState<Topology | null>(null);
   useEffect(() => void loadDemoTopology().then(setTopology), []);
-  return topology ? <Explorer topology={topology} /> : null;
+  if (!topology) return null;
+  const outage = DEMO_OUTAGE.filter((id) => topology.nodes.some((n) => n.id === id));
+  return <Explorer topology={topology} initialBroken={outage} intro />;
 }
 
 function Live() {
@@ -87,13 +92,22 @@ function Live() {
   );
 }
 
-function Explorer({ topology, live, busy, onCheckNow }: { topology: Topology; live?: LiveState; busy?: boolean; onCheckNow?: () => void }) {
+function Explorer({ topology, live, busy, onCheckNow, initialBroken = [], intro = false }: {
+  topology: Topology;
+  live?: LiveState;
+  busy?: boolean;
+  onCheckNow?: () => void;
+  /** Nodes that start out broken (demo scenario). */
+  initialBroken?: string[];
+  /** Explain the starting scenario in the simulation panel. */
+  intro?: boolean;
+}) {
   const [selected, setSelected] = useState<string | null>(null);
   const [mode, setMode] = useState<HighlightMode>('both');
   const [hiddenLayers, setHiddenLayers] = useState<string[]>([]);
   const [showAll, setShowAll] = useState(false);
   const [query, setQuery] = useState('');
-  const [broken, setBroken] = useState<string[]>([]);
+  const [broken, setBroken] = useState<string[]>(initialBroken);
   const scene = useRef<InfraSceneHandle>(null);
 
   const validation = useMemo(() => validateTopology(topology), [topology]);
@@ -189,6 +203,12 @@ function Explorer({ topology, live, busy, onCheckNow }: { topology: Topology; li
         {simulation && (
           <section className="simulation">
             <h2>Simulated failure</h2>
+            {intro && broken.join() === initialBroken.join() && (
+              <p className="intro">
+                <b>{broken.map(label).join(', ')}</b> just went offline. infra3d only probes the {endpoints.length} endpoints from
+                outside; the dependency graph narrows {topology.nodes.length} nodes down to {simulation.causes.filter((c) => c.count === simulation.causes[0]?.count).length} candidates.
+              </p>
+            )}
             <p>
               <span style={{ color: STATUS_COLORS.down }}>{simulation.down.length} of {endpoints.length} endpoints down</span>
               {' '}· broken: {broken.map(label).join(', ')}
@@ -208,7 +228,7 @@ function Explorer({ topology, live, busy, onCheckNow }: { topology: Topology; li
             ) : (
               <p className="muted">Everything below the failed endpoints answers – the fault is in the service itself.</p>
             )}
-            <button className="clear" onClick={() => setBroken([])}>End simulation</button>
+            <button className="action" onClick={() => setBroken([])}>Repair everything</button>
           </section>
         )}
 
