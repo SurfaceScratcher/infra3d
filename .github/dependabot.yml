@@ -4,6 +4,10 @@ updates:
     directory: /
     schedule:
       interval: monthly
+    ignore:
+      # Types follow the oldest supported Node version, not the newest
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
     groups:
       react-three:
         patterns: ['react', 'react-dom', '@types/react*', 'three', '@types/three', '@react-three/*']
