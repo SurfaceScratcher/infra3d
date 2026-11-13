@@ -1,5 +1,11 @@
 # infra3d
 
+## 0.2.1
+
+### Patch Changes
+
+- 31c249c: The self-hosted infra3d app is available as a Docker image (`ghcr.io/surfacescratcher/infra3d`), built from this version of the library.
+
 ## 0.2.0
 
 ### Minor Changes

@@ -1,6 +1,6 @@
 {
   "name": "infra3d",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Navigable 3D view of IT infrastructure for React: hosts, networks, containers and endpoints as stacked layers, with dependency and impact highlighting.",
   "license": "MIT",
   "repository": {
