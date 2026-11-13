@@ -11,6 +11,7 @@ export default defineConfig({
   plugins: [react()],
   // Use the library source directly so changes show up without a build step
   resolve: { alias: { infra3d: src('../../packages/infra3d/src/index.ts') } },
-  build: { outDir: 'dist', emptyOutDir: true },
+  // Bundled three.js, React etc. keep their license notices in THIRD_PARTY_LICENSES.md next to the app
+  build: { outDir: 'dist', emptyOutDir: true, license: { fileName: 'THIRD_PARTY_LICENSES.md' } },
   server: { proxy: { '/api': 'http://localhost:8080' } },
 });
