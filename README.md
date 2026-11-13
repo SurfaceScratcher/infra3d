@@ -39,7 +39,9 @@ services:
 
 `docker compose up -d`, then open http://localhost:8080. Mount the root of an Ansible repository
 (with `inventory/` and `stacks/`) at `/stacks` instead and it is detected automatically.
-All options are in [apps/app](apps/app#configuration).
+All options are in [apps/app](apps/app#configuration). The UI shows your whole infrastructure, so
+keep it on your LAN or protect it with `INFRA3D_AUTH` or your reverse proxy's login, see
+[Security](apps/app#security). Read-only, no telemetry, no Docker socket needed.
 
 ## React component
 

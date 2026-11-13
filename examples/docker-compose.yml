@@ -19,4 +19,6 @@ services:
       # NTFY_URL: https://ntfy.sh/my-homelab
       # WEBHOOK_URL: https://example.com/hooks/infra3d
       # INFRA3D_BASE_URL: https://infra.example.com
+      # Basic Auth for the UI, or put it behind your reverse proxy's login
+      # INFRA3D_AUTH: admin:change-me
       INFRA3D_INTERVAL: "60"
