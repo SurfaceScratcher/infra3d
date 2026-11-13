@@ -110,7 +110,7 @@ infra3d was written with [Claude Code](https://claude.com/claude-code), Anthropi
 agent. I came up with the idea, made the design decisions, reviewed the changes and run it
 against my own homelab every day. The test suite, CI and the [security notes](apps/app#security)
 are there so you don't have to take that on trust. Questions about how something works are
-welcome in the issues.
+welcome in [Discussions](https://github.com/SurfaceScratcher/infra3d/discussions).
 
 ## License
 
