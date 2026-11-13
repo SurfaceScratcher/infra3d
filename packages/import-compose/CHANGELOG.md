@@ -1,5 +1,11 @@
 # infra3d-import-compose
 
+## 0.3.0
+
+### Minor Changes
+
+- 3982ecb: Anonymized import reports for bug reports: `-r report.json` writes what the importer read with domains, IPs, host names, e-mail addresses, paths and secret values replaced, and passing a report instead of a directory replays the import. Also available as `createImportReport()`.
+
 ## 0.2.0
 
 ### Minor Changes
