@@ -11,6 +11,7 @@ Requires Node 22 or newer.
 ```bash
 npm install
 npm run dev          # demo at http://localhost:5173 with live reload of the library source
+npm run dev -w @infra3d/app   # live app: server on :8080 plus Vite, see apps/app/README.md
 npm test             # vitest in all packages
 npm run typecheck
 npm run build
@@ -19,7 +20,7 @@ npm run build
 To try your own infrastructure in the demo without committing it:
 
 ```bash
-npm run import -- ../my-stacks -o apps/demo/src/data/local.json
+npm run import -- ../my-stacks -o apps/app/web/src/data/local.json
 ```
 
 `local.json` and `infra3d.config.json` are gitignored. Please never commit real hostnames,
@@ -42,7 +43,9 @@ packages/infra3d/          the library, published as `infra3d`
 packages/import-compose/   CLI `infra3d-import-compose`
   src/build.ts             buildTopology(): compose files → topology
   src/sources/             readers for on-disk layouts (directory, ansible)
-apps/demo/                 Vite app, deployed to GitHub Pages
+apps/app/                  the self-hosted app (Docker image) and the demo on GitHub Pages
+  server/src/              Node server: import, endpoint checks, notifications, /api/state
+  web/src/                 UI; `--mode demo` builds the static demo instead of the live app
 ```
 
 ## Concepts

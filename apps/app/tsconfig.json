@@ -4,5 +4,5 @@
     "noEmit": true,
     "paths": { "infra3d": ["../../packages/infra3d/src/index.ts"] }
   },
-  "include": ["src"]
+  "include": ["web/src"]
 }

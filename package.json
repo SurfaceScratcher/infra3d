@@ -7,8 +7,8 @@
     "apps/*"
   ],
   "scripts": {
-    "dev": "npm run dev -w @infra3d/demo",
-    "build": "npm run build -w infra3d -w infra3d-import-compose && npm run build -w @infra3d/demo",
+    "dev": "npm run dev:demo -w @infra3d/app",
+    "build": "npm run build -w infra3d -w infra3d-import-compose && npm run build -w @infra3d/app",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm test --workspaces --if-present",
     "import": "npm run build --silent -w infra3d -w infra3d-import-compose && node packages/import-compose/dist/cli.js",

@@ -5,5 +5,5 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": ["@infra3d/demo"]
+  "ignore": ["@infra3d/app"]
 }

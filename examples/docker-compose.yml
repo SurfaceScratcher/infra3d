@@ -1,0 +1,22 @@
+# infra3d as a self-hosted app. Put this next to your stacks and run `docker compose up -d`,
+# then open http://<host>:8080.
+services:
+  infra3d:
+    image: ghcr.io/surfacescratcher/infra3d:latest
+    container_name: infra3d
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      # One folder per host, one subfolder per stack: stacks/<host>/<stack>/compose.yaml
+      # (or the root of an Ansible repository with inventory/ and stacks/)
+      - ./stacks:/stacks:ro
+      # Optional: config/infra3d.config.json with hosts, sites, uplinks and special cases
+      # (see packages/import-compose/infra3d.config.example.json)
+      - ./config:/config:ro
+    environment:
+      # Optional: notifications when endpoints go down or recover
+      # NTFY_URL: https://ntfy.sh/my-homelab
+      # WEBHOOK_URL: https://example.com/hooks/infra3d
+      # INFRA3D_BASE_URL: https://infra.example.com
+      INFRA3D_INTERVAL: "60"
