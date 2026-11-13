@@ -1,0 +1,4 @@
+services:
+  ghost:
+    image: ghost:5
+    ports: ["8080:2368/tcp"]

@@ -59,13 +59,17 @@ so networks and endpoints end up above or below "their" containers.
 
 ## Your own data
 
-Copy `packages/import-compose/infra3d.config.example.json` to `infra3d.config.json`
-in the repository root, adjust it and run the importer. If `apps/demo/src/data/local.json`
-exists, the demo shows it instead of the example. Both files are gitignored.
+`infra3d-import-compose` builds a topology from Docker Compose files:
+containers, networks, `depends_on`, endpoints from Traefik `Host()` rules and published
+ports, and references between services. See [packages/import-compose](packages/import-compose).
 
 ```bash
-npm run import:server-stack   # ../server-stack → apps/demo/src/data/local.json
+npx infra3d-import-compose ./stacks -c infra3d.config.json -o topology.json
 ```
+
+In this repository, `npm run import -- <root> -o apps/demo/src/data/local.json` makes the
+demo show your own infrastructure instead of the example. `local.json` and
+`infra3d.config.json` are gitignored.
 
 ## License
 

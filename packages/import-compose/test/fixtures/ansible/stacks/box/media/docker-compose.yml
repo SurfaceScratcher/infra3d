@@ -1,0 +1,8 @@
+services:
+  jellyfin:
+    image: jellyfin/jellyfin:10.10
+    volumes:
+      - /mnt/media/movies:/movies:ro
+      - config:/config
+    labels:
+      - traefik.http.routers.media.rule=Host(`media.{{ domain }}`)
