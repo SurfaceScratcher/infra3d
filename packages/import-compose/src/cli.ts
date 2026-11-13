@@ -4,18 +4,21 @@ import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { validateTopology } from 'infra3d/core';
 import { buildTopology } from './build.js';
+import { createImportReport, isImportReport } from './report.js';
 import { ansibleSource, isAnsibleRepo } from './sources/ansible.js';
 import { directorySource } from './sources/directory.js';
-import type { ImportConfig, Source } from './types.js';
+import type { ImportConfig, ImportInput, Source } from './types.js';
 
 const USAGE = `Usage: infra3d-import-compose <root> [options]
+       infra3d-import-compose <report.json> [options]
 
-Builds an infra3d topology from Docker Compose files.
+Builds an infra3d topology from Docker Compose files, or replays an import report.
 
 Options:
   -o, --out <file>       write the topology here (default: stdout)
   -c, --config <file>    hosts, sites and special cases (default: ./infra3d.config.json if present)
   -s, --source <name>    directory | ansible | auto (default: auto)
+  -r, --report <file>    also write an anonymized import report for bug reports
   -h, --help             show this help
 
 Sources:
@@ -32,6 +35,7 @@ function main() {
       out: { type: 'string', short: 'o' },
       config: { type: 'string', short: 'c' },
       source: { type: 'string', short: 's', default: 'auto' },
+      report: { type: 'string', short: 'r' },
       help: { type: 'boolean', short: 'h' },
     },
   });
@@ -41,14 +45,29 @@ function main() {
   }
 
   const root = path.resolve(positionals[0]);
-  const configFile = values.config ?? (fs.existsSync('infra3d.config.json') ? 'infra3d.config.json' : undefined);
-  const config: ImportConfig = configFile ? JSON.parse(fs.readFileSync(configFile, 'utf8')) : {};
-  const sourceName = values.source === 'auto' ? (isAnsibleRepo(root) ? 'ansible' : 'directory') : values.source!;
-  const source = SOURCES[sourceName];
-  if (!source) throw new Error(`unknown source "${sourceName}", expected one of: ${Object.keys(SOURCES).join(', ')}`);
+  let config: ImportConfig;
+  let input: ImportInput;
+  let sourceName: string;
+  const replay = root.endsWith('.json') && fs.statSync(root).isFile() ? JSON.parse(fs.readFileSync(root, 'utf8')) : null;
+  if (replay) {
+    if (!isImportReport(replay)) throw new Error(`${positionals[0]} is not an infra3d import report`);
+    ({ input, config } = replay);
+    sourceName = 'report';
+  } else {
+    const configFile = values.config ?? (fs.existsSync('infra3d.config.json') ? 'infra3d.config.json' : undefined);
+    config = configFile ? JSON.parse(fs.readFileSync(configFile, 'utf8')) : {};
+    sourceName = values.source === 'auto' ? (isAnsibleRepo(root) ? 'ansible' : 'directory') : values.source!;
+    const source = SOURCES[sourceName];
+    if (!source) throw new Error(`unknown source "${sourceName}", expected one of: ${Object.keys(SOURCES).join(', ')}`);
+    input = source(root, config);
+  }
 
   const importWarnings: string[] = [];
-  const topology = buildTopology(source(root, config), config, importWarnings);
+  const topology = buildTopology(input, config, importWarnings);
+  if (values.report) {
+    fs.writeFileSync(values.report, JSON.stringify(createImportReport(input, config, importWarnings), null, 2) + '\n');
+    process.stderr.write(`anonymized import report → ${values.report} (please read it before sharing)\n`);
+  }
   const { errors, warnings } = validateTopology(topology);
   for (const w of [...importWarnings, ...errors, ...warnings]) process.stderr.write(`warning: ${w}\n`);
 

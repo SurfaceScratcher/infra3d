@@ -14,6 +14,14 @@ body:
       label: How to reproduce
       description: A minimal topology (JSON) or compose file helps most. Please remove real hostnames and addresses.
       render: json
+  - type: textarea
+    id: report
+    attributes:
+      label: Import report
+      description: >-
+        If the importer misreads your setup: click "import report" at the bottom of the app's sidebar,
+        or run `npx infra3d-import-compose <your stacks> -r report.json`. It replaces domains, IPs, host
+        names and secrets. Read it, then drag the file here.
   - type: input
     id: versions
     attributes:

@@ -70,6 +70,8 @@ or put it behind the authentication of your reverse proxy (Authelia, Authentik, 
 
 - `GET /api/state`: topology, check results, status per node, failed endpoints, suspects and causes
 - `POST /api/check`: re-read the topology and check now
+- `GET /api/report`: the last import as an anonymized report for bug reports (also linked as
+  "import report" at the bottom of the sidebar), see [import reports](../../packages/import-compose#import-reports-for-bug-reports)
 - `GET /healthz`: liveness
 
 ## Development

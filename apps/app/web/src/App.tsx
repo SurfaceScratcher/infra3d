@@ -322,6 +322,14 @@ function Explorer({ topology, live, busy, onCheckNow, initialBroken = [], intro 
         <p className="credits">
           <a href="https://github.com/SurfaceScratcher/infra3d" target="_blank" rel="noreferrer">infra3d</a> · MIT ·{' '}
           <a href="THIRD_PARTY_LICENSES.md" target="_blank" rel="noreferrer">third-party licenses</a>
+          {live?.source.kind === 'import' && (
+            <>
+              {' · '}
+              <a href="api/report" download title="Your import without domains, IPs, host names or secrets, to attach to a bug report">
+                import report
+              </a>
+            </>
+          )}
         </p>
       </aside>
 

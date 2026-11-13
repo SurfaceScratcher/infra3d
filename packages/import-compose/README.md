@@ -8,6 +8,28 @@ npx infra3d-import-compose <root> [-c infra3d.config.json] [-o topology.json] [-
 
 Without `-o` the topology goes to stdout. Without `-c`, `./infra3d.config.json` is used if present.
 
+## Import reports for bug reports
+
+If the importer misreads your setup, `-r report.json` writes an anonymized copy of what it read,
+which you can attach to an issue:
+
+```bash
+npx infra3d-import-compose ~/stacks -r report.json
+```
+
+Domains, IP addresses, host names, e-mail addresses and file paths are replaced consistently
+(`domain1.example`, `192.0.2.x`, `host1`, `/mnt/share1`), so routes and links still match.
+Environment variables, labels that are not routing rules and commands keep only the host names
+and addresses in them; every other value becomes `<redacted>`. Stack, service, network and volume
+names, images and ports stay, because most importer bugs depend on them. **Read the report before
+you share it** and rename anything private.
+
+Passing a report instead of a directory replays the import, e.g. to reproduce a bug:
+
+```bash
+npx infra3d-import-compose report.json -o topology.json
+```
+
 ## Sources
 
 | Source | Layout |
@@ -61,4 +83,7 @@ Start from [infra3d.config.example.json](infra3d.config.example.json).
 import { buildTopology, directorySource } from 'infra3d-import-compose';
 
 const topology = buildTopology(directorySource('./stacks', config), config);
+
+// the same import, anonymized; buildTopology(report.input, report.config) replays it
+const report = createImportReport(directorySource('./stacks', config), config);
 ```

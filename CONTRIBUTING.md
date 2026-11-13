@@ -24,6 +24,12 @@ To try your own infrastructure in the demo without committing it:
 npm run import -- ../my-stacks -o apps/app/web/src/data/local.json
 ```
 
+To reproduce an importer bug from an issue, replay the attached report:
+
+```bash
+npm run import -- report.json -o apps/app/web/src/data/local.json
+```
+
 `local.json` and `infra3d.config.json` are gitignored. Please never commit real hostnames,
 addresses or configs, including in test fixtures and screenshots. Use `example.com` and
 private address ranges.

@@ -2,3 +2,4 @@ export { buildTopology, publishedPort, isLoopbackPort, isUdpPort, routedHostname
 export { directorySource } from './sources/directory.js';
 export { ansibleSource, isAnsibleRepo } from './sources/ansible.js';
 export type * from './types.js';
+export { createImportReport, isImportReport, type ImportReport } from './report.js';
