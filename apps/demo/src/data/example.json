@@ -1,4 +1,6 @@
 {
+  "$schema": "../../../../packages/infra3d/topology.schema.json",
+  "schemaVersion": 1,
   "name": "Example infrastructure",
   "columns": [
     "web-01",
@@ -514,7 +516,8 @@
       "meta": {
         "URL": "https://shop.example.com",
         "Access": "Traefik (HTTPS)"
-      }
+      },
+      "check": "https://shop.example.com"
     },
     {
       "id": "e:api.example.com",
@@ -525,7 +528,8 @@
       "meta": {
         "URL": "https://api.example.com",
         "Access": "Traefik (HTTPS)"
-      }
+      },
+      "check": "https://api.example.com"
     },
     {
       "id": "e:auth.example.com",
@@ -536,7 +540,8 @@
       "meta": {
         "URL": "https://auth.example.com",
         "Access": "Traefik (HTTPS)"
-      }
+      },
+      "check": "https://auth.example.com"
     },
     {
       "id": "e:grafana.example.com",
@@ -547,7 +552,8 @@
       "meta": {
         "URL": "https://grafana.example.com",
         "Access": "Traefik (HTTPS)"
-      }
+      },
+      "check": "https://grafana.example.com"
     },
     {
       "id": "e:git.example.com",
@@ -558,7 +564,8 @@
       "meta": {
         "URL": "https://git.example.com",
         "Access": "Traefik (HTTPS)"
-      }
+      },
+      "check": "https://git.example.com"
     },
     {
       "id": "e:ci.example.com",
@@ -569,7 +576,8 @@
       "meta": {
         "URL": "https://ci.example.com",
         "Access": "Traefik (HTTPS)"
-      }
+      },
+      "check": "https://ci.example.com"
     },
     {
       "id": "e:registry.example.com",
@@ -580,7 +588,8 @@
       "meta": {
         "URL": "https://registry.example.com",
         "Access": "Traefik (HTTPS)"
-      }
+      },
+      "check": "https://registry.example.com"
     },
     {
       "id": "e:photos.home.example.com",
@@ -591,7 +600,8 @@
       "meta": {
         "URL": "https://photos.home.example.com",
         "Access": "Traefik (HTTPS)"
-      }
+      },
+      "check": "https://photos.home.example.com"
     },
     {
       "id": "e:media.home.example.com",
@@ -602,7 +612,8 @@
       "meta": {
         "URL": "https://media.home.example.com",
         "Access": "Traefik (HTTPS)"
-      }
+      },
+      "check": "https://media.home.example.com"
     },
     {
       "id": "e:dns.home.example.com",
@@ -613,7 +624,8 @@
       "meta": {
         "URL": "https://dns.home.example.com",
         "Access": "Traefik (HTTPS)"
-      }
+      },
+      "check": "https://dns.home.example.com"
     },
     {
       "id": "e:homelab:53",
@@ -624,7 +636,8 @@
       "meta": {
         "Access": "direct port",
         "Port": "53"
-      }
+      },
+      "check": "tcp://10.0.0.10:53"
     },
     {
       "id": "e:git.example.com:2222",
@@ -635,7 +648,8 @@
       "meta": {
         "Access": "direct port",
         "Port": "2222"
-      }
+      },
+      "check": "tcp://git.example.com:2222"
     }
   ],
   "edges": [
