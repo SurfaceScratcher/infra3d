@@ -1,5 +1,11 @@
 # infra3d
 
+## 0.4.0
+
+### Minor Changes
+
+- 61ab561: New default colours: soft pastel nodes and edges on a dark violet background, with periwinkle as the accent; the status colours for down and suspect stay clearly distinct. Pass `theme` to keep the previous colours.
+
 ## 0.3.1
 
 ### Patch Changes
