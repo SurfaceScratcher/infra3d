@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   InfraScene, DEFAULT_THEME, NODE_COLORS, DOWN_COLOR, UP_COLOR, STATUS_COLORS,
   analyzeHealth, checkTarget, computeHighlight, dependencyClosure, neighbors, validateTopology,
 } from 'infra3d';
-import type { BuiltinEdgeKind, BuiltinNodeType, CheckResult, HighlightMode, InfraEdge, NodeType, Topology } from 'infra3d';
+import type { BuiltinEdgeKind, BuiltinNodeType, CheckResult, HighlightMode, InfraEdge, InfraSceneHandle, NodeType, Topology } from 'infra3d';
 import example from './data/example.json';
 
 // Local data (written by the importer, gitignored) takes precedence over the example.
@@ -61,6 +61,7 @@ export function App() {
   const [showAll, setShowAll] = useState(false);
   const [query, setQuery] = useState('');
   const [broken, setBroken] = useState<string[]>([]);
+  const scene = useRef<InfraSceneHandle>(null);
 
   const highlight = useMemo(() => computeHighlight(topology, selected, mode), [selected, mode]);
   const node = selected ? nodeById.get(selected) : undefined;
@@ -205,7 +206,8 @@ export function App() {
       </aside>
 
       <main className="stage">
-        <InfraScene topology={topology} status={health?.status} selectedId={selected} onSelect={setSelected} mode={mode} hiddenLayers={hiddenLayers} showAllLabels={showAll} />
+        <button className="fit" onClick={() => { setSelected(null); scene.current?.fitAll(); }}>Show all</button>
+        <InfraScene ref={scene} topology={topology} status={health?.status} selectedId={selected} onSelect={setSelected} mode={mode} hiddenLayers={hiddenLayers} showAllLabels={showAll} />
       </main>
     </div>
   );

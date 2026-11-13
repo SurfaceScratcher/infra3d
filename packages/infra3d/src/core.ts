@@ -6,6 +6,8 @@ export { validateTopology } from './validate.js';
 export type { ValidationResult } from './validate.js';
 export { computeLayout } from './layout.js';
 export type { LayoutOptions, Layout, Vec3 } from './layout.js';
+export { fitCamera, sceneBox, DEFAULT_CAMERA_ANGLE } from './camera.js';
+export type { CameraAngle, CameraFit, FitOptions, Box } from './camera.js';
 export { traverse, computeHighlight, neighbors } from './graph.js';
 export type { Reach, Highlight } from './graph.js';
 export { analyzeHealth, dependencyClosure, checkTarget, STRUCTURAL_KINDS } from './health.js';

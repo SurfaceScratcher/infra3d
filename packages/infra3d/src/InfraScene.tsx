@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useImperativeHandle, useMemo, useRef, useState, type CSSProperties, type RefObject, type Ref } from 'react';
 import { Canvas, useFrame, type ThreeEvent } from '@react-three/fiber';
 import { CameraControls, Html, QuadraticBezierLine } from '@react-three/drei';
 import { computeLayout, type LayoutOptions, type Vec3 } from './layout.js';
+import { fitCamera, sceneBox, type CameraAngle, type CameraFit } from './camera.js';
 import { computeHighlight, type Highlight } from './graph.js';
 import type { Mesh } from 'three';
 import { resolveTheme, type InfraTheme } from './theme.js';
@@ -22,9 +23,19 @@ export interface InfraSceneProps {
   /** Shortcut for `theme.background`. */
   background?: string;
   layout?: LayoutOptions;
+  /** Viewing angle of the overview; the distance follows from the scene size and the viewport. */
+  cameraAngle?: CameraAngle;
   className?: string;
   style?: CSSProperties;
+  ref?: Ref<InfraSceneHandle>;
 }
+
+export interface InfraSceneHandle {
+  /** Moves the camera back to the overview that shows the whole scene. */
+  fitAll(smooth?: boolean): void;
+}
+
+const FOV = 45;
 
 export function InfraScene({
   topology,
@@ -37,8 +48,10 @@ export function InfraScene({
   theme: themeOverrides,
   background,
   layout: layoutOpts,
+  cameraAngle,
   className,
   style,
+  ref,
 }: InfraSceneProps) {
   const layout = useMemo(() => computeLayout(topology, layoutOpts), [topology, layoutOpts]);
   const highlight = useMemo(() => computeHighlight(topology, selectedId, mode), [topology, selectedId, mode]);
@@ -49,20 +62,27 @@ export function InfraScene({
 
   const visible = (n: InfraNode | undefined) => !!n && !hidden.has(n.layer);
   const { bounds } = layout;
-  const center: Vec3 = [(bounds.minX + bounds.maxX) / 2, ((topology.layers.length - 1) * (layoutOpts?.layerGap ?? 10)) / 2, (bounds.minZ + bounds.maxZ) / 2];
-  // Scale camera distance, fog and zoom limit with the scene width
-  // so that wide scenes with many columns stay in view.
-  const zoom = Math.max(1, (bounds.maxX - bounds.minX) / 110);
+
+  // The overview depends on the scene size and the viewport's aspect ratio
+  const container = useRef<HTMLDivElement>(null);
+  const aspect = useAspect(container);
+  const fit = useMemo(
+    () => fitCamera(sceneBox(layout), { fov: FOV, aspect, angle: cameraAngle }),
+    [layout, aspect, cameraAngle?.azimuth, cameraAngle?.polar],
+  );
+  const fitAll = useRef<(smooth: boolean) => void>(null);
+  useImperativeHandle(ref, () => ({ fitAll: (smooth = true) => fitAll.current?.(smooth) }), []);
 
   return (
-    <div className={className} style={{ position: 'relative', width: '100%', height: '100%', ...style }}>
-      <Canvas camera={{ position: [center[0] + 10, center[1] + 45 * zoom, center[2] + 85 * zoom], fov: 45, near: 0.5, far: 1000 * zoom }} onPointerMissed={() => onSelect?.(null)}>
+    <div ref={container} className={className} style={{ position: 'relative', width: '100%', height: '100%', ...style }}>
+      <Canvas camera={{ position: fit.position, fov: FOV, near: 0.5, far: Math.max(1000, fit.distance * 10) }} onPointerMissed={() => onSelect?.(null)}>
         <color attach="background" args={[theme.background]} />
-        <fog attach="fog" args={[theme.background, 120 * zoom, 260 * zoom]} />
+        {/* Fog fades what lies behind the overview, so it scales with the fitted distance */}
+        <fog attach="fog" args={[theme.background, fit.distance * 1.25, fit.distance * 2.7]} />
         <ambientLight intensity={0.55} />
         <directionalLight position={[40, 80, 40]} intensity={1.1} />
 
-        <CameraRig selectedPos={selectedId ? layout.positions.get(selectedId) : undefined} center={center} zoom={zoom} />
+        <CameraRig selectedPos={selectedId ? layout.positions.get(selectedId) : undefined} fit={fit} fitAll={fitAll} />
 
         {topology.layers.map((l) =>
           hidden.has(l.id) ? null : (
@@ -120,20 +140,55 @@ function nodeState(id: string, h: Highlight | null): NodeState {
   return 'dim';
 }
 
-function CameraRig({ selectedPos, center, zoom = 1 }: { selectedPos?: Vec3; center: Vec3; zoom?: number }) {
+/** Width / height of an element, updated on resize. */
+function useAspect(ref: RefObject<HTMLDivElement | null>) {
+  const [aspect, setAspect] = useState(16 / 10);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const update = () => {
+      if (el.clientWidth && el.clientHeight) setAspect(el.clientWidth / el.clientHeight);
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [ref]);
+  return aspect;
+}
+
+function CameraRig({ selectedPos, fit, fitAll }: { selectedPos?: Vec3; fit: CameraFit; fitAll: RefObject<((smooth: boolean) => void) | null> }) {
   const ref = useRef<CameraControls>(null);
+  // Once the user moves the camera, resizes and topology updates no longer reset the view
+  const userMoved = useRef(false);
+  const selected = !!selectedPos;
+
+  fitAll.current = (smooth) => {
+    userMoved.current = false;
+    ref.current?.setLookAt(...fit.position, ...fit.target, smooth);
+  };
+
+  useEffect(() => {
+    if (!userMoved.current && !selected) fitAll.current?.(false);
+  }, [fit.distance, ...fit.target]);
+
   useEffect(() => {
     const c = ref.current;
-    if (!c) return;
-    if (selectedPos) {
-      const [x, y, z] = selectedPos;
-      c.setLookAt(x + 18, y + 30, z + 55, x, y, z, true);
-    }
+    if (!c || !selectedPos) return;
+    const [x, y, z] = selectedPos;
+    c.setLookAt(x + 18, y + 30, z + 55, x, y, z, true);
   }, [selectedPos?.[0], selectedPos?.[1], selectedPos?.[2]]);
-  useEffect(() => {
-    ref.current?.setTarget(center[0], center[1], center[2], false);
-  }, []);
-  return <CameraControls ref={ref} makeDefault maxDistance={220 * zoom} minDistance={5} dollySpeed={0.6} />;
+
+  return (
+    <CameraControls
+      ref={ref}
+      makeDefault
+      maxDistance={fit.distance * 2.3}
+      minDistance={5}
+      dollySpeed={0.6}
+      onControlStart={() => (userMoved.current = true)}
+    />
+  );
 }
 
 function LayerPlane({ theme, label, y, bounds, columns }: { theme: InfraTheme; label: string; y: number; bounds: { minX: number; maxX: number; minZ: number; maxZ: number }; columns: { id: string; x: number; width: number; depth: number }[] }) {
