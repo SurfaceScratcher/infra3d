@@ -1,5 +1,15 @@
 # infra3d
 
+## 0.3.0
+
+### Minor Changes
+
+- e0e6f71: 0.3.0 of the self-hosted app: single-host stack folders, Caddy and nginx-proxy routes, configured checks (see infra3d-import-compose), `INFRA3D_HOST` / `INFRA3D_HOST_ADDRESS`, and import warnings in the UI.
+
+### Patch Changes
+
+- af327bd: App: optional HTTP Basic Auth with `INFRA3D_AUTH=user:password`; security notes in the docs.
+
 ## 0.2.1
 
 ### Patch Changes
