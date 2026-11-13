@@ -37,8 +37,7 @@
   "scripts": {
     "build": "rm -rf dist && tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "prepack": "npm run build"
+    "test": "vitest run"
   },
   "dependencies": {
     "infra3d": "^0.1.0",

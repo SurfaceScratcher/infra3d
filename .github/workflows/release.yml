@@ -16,6 +16,9 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    env:
+      # Skip until the NPM_TOKEN secret is configured
+      HAS_NPM_TOKEN: ${{ secrets.NPM_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -26,6 +29,7 @@ jobs:
       - run: npm ci
       - run: npm run build -w infra3d -w infra3d-import-compose
       - uses: changesets/action@v1
+        if: env.HAS_NPM_TOKEN == 'true'
         with:
           version: npx changeset version
           publish: npx changeset publish
