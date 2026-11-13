@@ -71,6 +71,9 @@ Proxmox, NetBox …) is usually one small file in `src/sources/` plus fixtures.
 
 ## Pull requests
 
+- AI-assisted contributions are welcome; most of infra3d itself was written with an AI agent.
+  You are responsible for what you submit: understand it, test it, and be ready to explain it
+  in the review.
 - Keep PRs focused; one topic per PR.
 - Add or update tests for behaviour changes.
 - Run `npx changeset` if a published package changes and describe the change in one line.
