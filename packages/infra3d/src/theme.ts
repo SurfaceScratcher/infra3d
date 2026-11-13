@@ -22,7 +22,7 @@ export interface InfraTheme {
   fontFamily: string;
 }
 
-// SurfaceScratcher Pastell, the palette shared with Fox & Rabbit: soft pastels on an ink-violet night
+// Pastel palette: soft pastels on an ink-violet night
 export const DEFAULT_THEME: InfraTheme = {
   background: '#15151f',
   nodeColors: {
