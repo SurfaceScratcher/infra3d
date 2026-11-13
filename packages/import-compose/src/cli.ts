@@ -47,9 +47,10 @@ function main() {
   const source = SOURCES[sourceName];
   if (!source) throw new Error(`unknown source "${sourceName}", expected one of: ${Object.keys(SOURCES).join(', ')}`);
 
-  const topology = buildTopology(source(root, config), config);
+  const importWarnings: string[] = [];
+  const topology = buildTopology(source(root, config), config, importWarnings);
   const { errors, warnings } = validateTopology(topology);
-  for (const w of [...errors, ...warnings]) process.stderr.write(`warning: ${w}\n`);
+  for (const w of [...importWarnings, ...errors, ...warnings]) process.stderr.write(`warning: ${w}\n`);
 
   const json = JSON.stringify(topology, null, 2) + '\n';
   if (values.out && values.out !== '-') {

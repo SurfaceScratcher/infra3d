@@ -41,6 +41,16 @@ export interface HostConfig {
 export interface ImportConfig {
   name?: string;
   domain?: string;
+  /** Name of the host when all stacks belong to one machine (single-host layouts). Default: `host`. */
+  host?: string;
+  /** Address for TCP checks of hosts without `address` or `meta.LAN`, e.g. `host.docker.internal`. */
+  defaultAddress?: string;
+  /**
+   * Health checks for services the importer cannot see a route for, e.g. behind Nginx Proxy Manager
+   * or a Cloudflare tunnel. Key: `service`, `stack/service` or `host/stack/service`;
+   * value: one or more `https://…` / `tcp://host:port` targets.
+   */
+  checks?: Record<string, string | string[]>;
   /** Hosts in layout order. Without it, every host the source finds is used. */
   hosts?: Record<string, HostConfig>;
   /** Extra nodes and edges, e.g. sites, routers and NAS devices. */
@@ -63,14 +73,16 @@ export interface ComposeService {
   networks?: string[] | Record<string, unknown>;
   depends_on?: string[] | Record<string, unknown>;
   labels?: string[] | Record<string, string>;
-  ports?: (string | number | { published?: string | number })[];
-  environment?: unknown;
+  ports?: (string | number | { published?: string | number; host_ip?: string; protocol?: string })[];
+  environment?: Record<string, string | number | boolean | null> | string[];
   command?: unknown;
   entrypoint?: unknown;
   volumes?: (string | { source?: string })[];
 }
 
 export interface ComposeFile {
+  /** Project name; used as the stack name for a single compose file. */
+  name?: string;
   services?: Record<string, ComposeService>;
   networks?: Record<string, { external?: boolean; name?: string } | null>;
 }

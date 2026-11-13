@@ -1,0 +1,13 @@
+services:
+  jellyfin:
+    image: jellyfin/jellyfin:10.10
+    ports:
+      - "8096:8096"
+      - "127.0.0.1:8920:8920"
+    networks: [caddy]
+    labels:
+      caddy: media.home.example.com, jellyfin.home.example.com
+      caddy.reverse_proxy: "{{upstreams 8096}}"
+networks:
+  caddy:
+    external: true

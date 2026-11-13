@@ -15,7 +15,7 @@ export interface Check {
 
 export interface LiveState extends HealthAnalysis {
   topology: Topology | null;
-  source: { kind: 'file' | 'import'; path: string; error: string | null; loadedAt: string | null };
+  source: { kind: 'file' | 'import'; path: string; error: string | null; warnings: string[]; loadedAt: string | null };
   intervalSec: number;
   notify: { ntfy: boolean; webhook: boolean };
   checkedAt: string | null;

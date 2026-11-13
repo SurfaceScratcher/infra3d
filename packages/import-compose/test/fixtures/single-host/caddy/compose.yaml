@@ -1,0 +1,8 @@
+services:
+  caddy:
+    image: lucaslorentz/caddy-docker-proxy:ci-alpine
+    ports: ["80:80", "443:443"]
+    networks: [caddy]
+networks:
+  caddy:
+    external: true

@@ -8,6 +8,8 @@ export interface TopologySource {
   path: string;
   /** Why no topology could be loaded, or problems the validation found. */
   error: string | null;
+  /** Import problems that did not stop it, e.g. a `checks` key matching no service. */
+  warnings: string[];
   loadedAt: string | null;
 }
 
@@ -18,10 +20,16 @@ function read(): Topology {
   if (!fs.existsSync(config.stacksDir)) throw new Error(`${config.stacksDir} does not exist; mount your compose stacks there`);
   const hasConfig = fs.existsSync(config.importConfig) && fs.statSync(config.importConfig).isFile();
   const importConfig: ImportConfig = hasConfig ? JSON.parse(fs.readFileSync(config.importConfig, 'utf8')) : {};
+  if (config.host) importConfig.host = config.host;
   const kind = config.source === 'auto' ? (isAnsibleRepo(config.stacksDir) ? 'ansible' : 'directory') : config.source;
-  const source = kind === 'ansible' ? ansibleSource : kind === 'directory' ? directorySource : null;
-  if (!source) throw new Error(`unknown INFRA3D_SOURCE "${config.source}", expected auto, directory or ansible`);
-  const topology = buildTopology(source(config.stacksDir, importConfig), importConfig);
+  const importSource = kind === 'ansible' ? ansibleSource : kind === 'directory' ? directorySource : null;
+  if (!importSource) throw new Error(`unknown INFRA3D_SOURCE "${config.source}", expected auto, directory or ansible`);
+  const input = importSource(config.stacksDir, importConfig);
+  // A single host is the Docker host this container runs on
+  if (input.hosts.length === 1 && !importConfig.defaultAddress) importConfig.defaultAddress = config.hostAddress;
+  const warnings: string[] = [];
+  const topology = buildTopology(input, importConfig, warnings);
+  source.warnings = warnings;
   if (!topology.nodes.some((n) => n.type === 'container')) throw new Error(`no compose files found below ${config.stacksDir}`);
   return topology;
 }
@@ -32,6 +40,7 @@ export const source: TopologySource = {
   kind: config.topologyFile ? 'file' : 'import',
   path: config.topologyFile ?? config.stacksDir,
   error: null,
+  warnings: [],
   loadedAt: null,
 };
 
