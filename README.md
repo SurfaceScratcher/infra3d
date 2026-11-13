@@ -97,9 +97,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the architecture and how to add an im
 infra3d is built on [three.js](https://github.com/mrdoob/three.js),
 [React Three Fiber](https://github.com/pmndrs/react-three-fiber) and [drei](https://github.com/pmndrs/drei)
 by Poimandres, [camera-controls](https://github.com/yomotsu/camera-controls), [React](https://react.dev)
-and [yaml](https://github.com/eemeli/yaml). Node colours come from the
-[Tailwind CSS](https://tailwindcss.com/docs/colors) palette. Developed with Vite, Vitest, TypeScript
-and Changesets. Thank you to everyone behind them.
+and [yaml](https://github.com/eemeli/yaml). Developed with Vite, Vitest, TypeScript and Changesets. Thank you to everyone behind them.
 
 The app's web bundle ships the licenses of everything it includes in `THIRD_PARTY_LICENSES.md`,
 linked at the bottom of the UI.

@@ -3,7 +3,7 @@
 React component that shows IT infrastructure as stacked 3D layers
 (hardware → networks → containers → endpoints) you can rotate, zoom and click through.
 
-![infra3d demo: a simulated database failure narrowed down to its likely causes, with the dependencies and impact of the selected container highlighted](https://raw.githubusercontent.com/SurfaceScratcher/infra3d/main/docs/screenshot.png)
+![infra3d demo: a host goes offline, four endpoints fail and the dependency graph narrows 52 nodes down to four likely causes](https://raw.githubusercontent.com/SurfaceScratcher/infra3d/main/docs/screenshot.png)
 
 **[Live demo](https://surfacescratcher.github.io/infra3d/)** · [Repository](https://github.com/SurfaceScratcher/infra3d)
 
