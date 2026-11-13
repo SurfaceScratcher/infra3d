@@ -44,6 +44,19 @@ The scene fills its parent, so give the parent a height.
 | `status` | `Record<id, 'ok' \| 'down' \| 'suspect' \| 'unknown'>` | failed nodes pulse red, suspects are orange |
 | `theme` | `Partial<InfraTheme>` | colours and font, merged into `DEFAULT_THEME` |
 | `layout` | `LayoutOptions` | spacing and the anchor layer |
+| `cameraAngle` | `{ azimuth, polar }` | viewing angle of the overview in radians, default slightly from the right and above |
+| `ref` | `Ref<InfraSceneHandle>` | `ref.current.fitAll()` moves the camera back to the overview |
+
+The overview always shows the whole scene: the camera distance follows from the scene size and
+the aspect ratio of the container, so narrow phone screens move the camera back instead of
+cutting off the sides. Resizes and topology updates refit the view until the user moves the camera.
+
+```tsx
+const scene = useRef<InfraSceneHandle>(null);
+
+<button onClick={() => scene.current?.fitAll()}>Show all</button>
+<InfraScene ref={scene} topology={topology} />
+```
 
 ## Topology format
 
@@ -106,7 +119,7 @@ which usually means the container is gone. Count it as a failure with `answered:
 
 ## Other exports
 
-`computeLayout`, `traverse`, `computeHighlight`, `neighbors`, `dependencyClosure`,
+`computeLayout`, `fitCamera` / `sceneBox` (the overview camera as a pure function), `traverse`, `computeHighlight`, `neighbors`, `dependencyClosure`,
 `DEFAULT_THEME`, `resolveTheme`, and the colour constants `NODE_COLORS`, `EDGE_COLORS`,
 `STATUS_COLORS`, `DOWN_COLOR`, `UP_COLOR` for building legends. Everything except
 `InfraScene` is also available from `infra3d/core` without React or three.js.
