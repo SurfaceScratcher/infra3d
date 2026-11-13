@@ -1,7 +1,8 @@
 node_modules
 dist
-
-# Echte Infrastrukturdaten bleiben lokal
-infra3d.config.json
-src/data/local.json
 .vite
+*.tsbuildinfo
+
+# Real infrastructure data stays local
+infra3d.config.json
+**/data/local.json

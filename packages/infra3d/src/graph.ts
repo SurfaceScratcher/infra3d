@@ -1,6 +1,6 @@
-import type { EdgeKind, HighlightMode, Topology } from './types';
+import type { EdgeKind, HighlightMode, Topology } from './types.js';
 
-/** Kanten, über die sich ein Ausfall nicht weiter fortpflanzt (nur ein Schritt). */
+/** Edges a failure does not propagate beyond (followed for one step only). */
 const NON_PROPAGATING: EdgeKind[] = ['backup'];
 
 export interface Reach {
@@ -9,8 +9,8 @@ export interface Reach {
 }
 
 /**
- * 'down': alles, wovon `start` abhängt (Kanten vorwärts).
- * 'up':   alles, was ausfällt, wenn `start` ausfällt (Kanten rückwärts).
+ * 'down': everything `start` depends on (edges forward).
+ * 'up':   everything that fails when `start` fails (edges backward).
  */
 export function traverse(topo: Topology, start: string, dir: 'down' | 'up'): Reach {
   const out = new Map<string, number[]>();

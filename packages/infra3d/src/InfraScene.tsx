@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { Canvas, useFrame, type ThreeEvent } from '@react-three/fiber';
 import { CameraControls, Html, QuadraticBezierLine } from '@react-three/drei';
-import { computeLayout, type LayoutOptions, type Vec3 } from './layout';
-import { computeHighlight, type Highlight } from './graph';
+import { computeLayout, type LayoutOptions, type Vec3 } from './layout.js';
+import { computeHighlight, type Highlight } from './graph.js';
 import type { Mesh } from 'three';
-import type { EdgeKind, HighlightMode, InfraEdge, InfraNode, NodeStatus, NodeType, Topology } from './types';
+import type { EdgeKind, HighlightMode, InfraEdge, InfraNode, NodeStatus, NodeType, Topology } from './types.js';
 
 export interface InfraSceneProps {
   topology: Topology;
@@ -12,9 +12,9 @@ export interface InfraSceneProps {
   onSelect?: (id: string | null) => void;
   mode?: HighlightMode;
   hiddenLayers?: string[];
-  /** Container-/Endpunkt-Beschriftungen immer zeigen, nicht nur bei Hover/Auswahl. */
+  /** Always show container and endpoint labels, not only on hover or selection. */
   showAllLabels?: boolean;
-  /** Live-Zustand je Knoten: gestörte Knoten pulsieren rot, verdächtige sind orange markiert. */
+  /** Live state per node: failed nodes pulse red, suspects are marked orange. */
   status?: Record<string, NodeStatus>;
   background?: string;
   layout?: LayoutOptions;
@@ -70,8 +70,8 @@ export function InfraScene({
   const visible = (n: InfraNode | undefined) => !!n && !hidden.has(n.layer);
   const { bounds } = layout;
   const center: Vec3 = [(bounds.minX + bounds.maxX) / 2, ((topology.layers.length - 1) * (layoutOpts?.layerGap ?? 10)) / 2, (bounds.minZ + bounds.maxZ) / 2];
-  // Kameraabstand, Nebel und Zoomgrenze mit der Breite der Szene wachsen lassen,
-  // damit bei vielen Spalten alles im Bild und sichtbar bleibt.
+  // Scale camera distance, fog and zoom limit with the scene width
+  // so that wide scenes with many columns stay in view.
   const zoom = Math.max(1, (bounds.maxX - bounds.minX) / 110);
 
   return (
@@ -241,7 +241,7 @@ function NodeMesh({
   const dim = state === 'dim';
   const ring = state === 'down' ? DOWN_COLOR : state === 'up' ? UP_COLOR : null;
   const alarm = health === 'down' || health === 'suspect' ? STATUS_COLORS[health] : null;
-  const isDb = node.meta?.Rolle === 'Datenhaltung';
+  const isDb = node.role === 'database';
   const scale = selected ? 1.35 : hovered ? 1.15 : 1;
 
   const handlers = {

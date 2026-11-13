@@ -2,13 +2,13 @@
 // Topologie für <InfraScene>. Es werden nur Strukturdaten übernommen — keine
 // Env-Werte, keine Vault-Inhalte, keine öffentlichen IPs.
 //
-//   node scripts/import-server-stack.mjs ../server-stack src/data/local.json [infra3d.config.json]
+//   node packages/import-compose/src/import-server-stack.mjs ../server-stack apps/demo/src/data/local.json [infra3d.config.json]
 import fs from 'node:fs';
 import path from 'node:path';
 import YAML from 'yaml';
 
 const root = path.resolve(process.argv[2] ?? '../server-stack');
-const outFile = process.argv[3] ?? 'src/data/local.json';
+const outFile = process.argv[3] ?? 'apps/demo/src/data/local.json';
 const readYaml = (p) => YAML.parse(fs.readFileSync(path.join(root, p), 'utf8'));
 
 const domain = readYaml('inventory/group_vars/all/main.yml').domain;
@@ -88,7 +88,7 @@ for (const host of COLUMNS) {
       const cid = `c:${host}:${stack}:${svc}`;
       addNode({
         id: cid, label: svc, type: 'container', layer: 'container', column: host, group: stack,
-        meta: { Stack: stack, Image: String(def.image ?? 'build'), ...(isDb(def.image) ? { Rolle: 'Datenhaltung' } : {}) },
+        meta: { Stack: stack, Image: String(def.image ?? 'build') }, ...(isDb(def.image) ? { role: 'database' } : {}),
       });
 
       const nets = def.networks ? (Array.isArray(def.networks) ? def.networks : Object.keys(def.networks)) : ['default'];

@@ -8,8 +8,7 @@
     "strict": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
-    "noEmit": true,
-    "isolatedModules": true
-  },
-  "include": ["src"]
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true
+  }
 }
