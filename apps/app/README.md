@@ -22,13 +22,23 @@ A complete compose file is in [examples/docker-compose.yml](../../examples/docke
 4. Changes go to ntfy and/or a webhook.
 
 Probes run from inside the container. Endpoints that are only reachable from your LAN need a
-network the container can reach them from (the default bridge network usually works).
+network the container can reach them from (the default bridge network usually works). For a single
+host, published ports are checked on `host.docker.internal`, see the compose example.
+
+Services behind Nginx Proxy Manager, a Cloudflare tunnel or anything else the importer cannot see
+get their checks from `checks` in `infra3d.config.json`:
+
+```json
+{ "checks": { "jellyfin": "https://media.example.com", "homeassistant": "tcp://192.168.1.10:8123" } }
+```
 
 ## Configuration
 
 | Variable | Default | |
 | --- | --- | --- |
-| `INFRA3D_STACKS` | `/stacks` | compose stacks: `<host>/<stack>/compose.yaml`, or an Ansible repository |
+| `INFRA3D_STACKS` | `/stacks` | compose stacks: a single `compose.yaml`, `<stack>/compose.yaml`, `<host>/<stack>/compose.yaml`, or an Ansible repository |
+| `INFRA3D_HOST` | `host` | name of the host when all stacks run on one machine |
+| `INFRA3D_HOST_ADDRESS` | `host.docker.internal` | where TCP checks of a single host's published ports go; needs `extra_hosts: ["host.docker.internal:host-gateway"]` |
 | `INFRA3D_SOURCE` | `auto` | `directory`, `ansible` or `auto` (Ansible if `inventory/host_vars` exists) |
 | `INFRA3D_CONFIG` | `/config/infra3d.config.json` | optional hosts, sites, uplinks and special cases, see [the importer](../../packages/import-compose#config) |
 | `INFRA3D_TOPOLOGY` | | path to a ready-made topology JSON; skips the import |

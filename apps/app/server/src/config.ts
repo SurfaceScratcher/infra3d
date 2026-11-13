@@ -13,6 +13,13 @@ export const config = {
   source: env.INFRA3D_SOURCE || 'auto',
   /** Hosts, sites and special cases for the importer; optional. */
   importConfig: env.INFRA3D_CONFIG || '/config/infra3d.config.json',
+  /** Name of the host in single-host layouts (stack folders directly below INFRA3D_STACKS). */
+  host: env.INFRA3D_HOST || null,
+  /**
+   * Where TCP checks of a single host's published ports go. From inside the container the Docker host is
+   * reachable as host.docker.internal (with `extra_hosts: host.docker.internal:host-gateway`).
+   */
+  hostAddress: env.INFRA3D_HOST_ADDRESS || 'host.docker.internal',
   /** Seconds between check runs; the topology is re-read in the same rhythm. */
   intervalSec: num(env.INFRA3D_INTERVAL, 60),
   /** Consecutive failures before an endpoint counts as down. */

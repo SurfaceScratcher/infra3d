@@ -1,0 +1,12 @@
+services:
+  app:
+    image: ghcr.io/example/notes:2
+    environment:
+      VIRTUAL_HOST: notes.home.example.com
+      DB_HOST: db
+    depends_on: [db]
+  db:
+    image: postgres:17
+  nginx-proxy:
+    image: nginxproxy/nginx-proxy:1.6
+    ports: ["8443:443"]
