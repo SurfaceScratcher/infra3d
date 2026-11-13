@@ -1,9 +1,29 @@
 {
   "name": "infra3d-import-compose",
   "version": "0.1.0",
-  "private": true,
+  "description": "Builds an infra3d topology from Docker Compose files (plain stack directories or an Ansible inventory).",
+  "license": "MIT",
   "type": "module",
+  "keywords": ["infra3d", "docker-compose", "traefik", "ansible", "topology"],
+  "bin": { "infra3d-import-compose": "./dist/cli.js" },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist", "infra3d.config.example.json"],
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
   "dependencies": {
+    "infra3d": "^0.1.0",
     "yaml": "^2.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.0"
   }
 }

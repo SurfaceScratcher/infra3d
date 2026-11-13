@@ -1,0 +1,18 @@
+services:
+  web:
+    image: registry.example.com/shop/web:1.0
+    networks: [proxy, internal]
+    depends_on: [db]
+    environment:
+      API_URL: https://git.example.com/api
+    labels:
+      traefik.http.routers.shop.rule: Host(`shop.${DOMAIN}`)
+      traefik.http.routers.shop.middlewares: keycloak@file
+  db:
+    image: postgres:17-alpine
+    networks: [internal]
+networks:
+  proxy:
+    external: true
+    name: proxy
+  internal: {}

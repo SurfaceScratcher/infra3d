@@ -8,9 +8,10 @@
   ],
   "scripts": {
     "dev": "npm run dev -w @infra3d/demo",
-    "build": "npm run build -w infra3d && npm run build -w @infra3d/demo",
+    "build": "npm run build -w infra3d -w infra3d-import-compose && npm run build -w @infra3d/demo",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "import:server-stack": "node packages/import-compose/src/import-server-stack.mjs ../server-stack apps/demo/src/data/local.json"
+    "test": "npm test --workspaces --if-present",
+    "import": "npm run build --silent -w infra3d -w infra3d-import-compose && node packages/import-compose/dist/cli.js"
   },
   "devDependencies": {
     "typescript": "^5.6.3"

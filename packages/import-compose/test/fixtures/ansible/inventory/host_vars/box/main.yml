@@ -1,0 +1,4 @@
+stacks: [media]
+nas_backup_enabled: true
+nas_mounts:
+  - dest: /mnt/media
