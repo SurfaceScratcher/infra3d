@@ -16,7 +16,7 @@ rotate, zoom and click through.
 - **Notifications** via ntfy or a webhook when something goes down or recovers.
 - Runs as a **Docker container** (amd64 and arm64), or embed the **React component** in your own app.
 
-![infra3d demo: a simulated database failure narrowed down to its likely causes, with the dependencies and impact of the selected container highlighted](https://raw.githubusercontent.com/SurfaceScratcher/infra3d/main/docs/screenshot.png)
+![infra3d demo: rotating the 3D view, selecting a database to highlight its dependencies and impact, simulating its failure and getting the likely causes](docs/demo.gif)
 
 **[Live demo](https://surfacescratcher.github.io/infra3d/)** · [Library docs](packages/infra3d) · [Importer](packages/import-compose) · [Contributing](CONTRIBUTING.md)
 
