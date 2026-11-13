@@ -5,7 +5,17 @@
   "license": "MIT",
   "type": "module",
   "sideEffects": false,
-  "keywords": ["react", "three", "react-three-fiber", "infrastructure", "topology", "network", "docker", "visualization", "3d"],
+  "keywords": [
+    "react",
+    "three",
+    "react-three-fiber",
+    "infrastructure",
+    "topology",
+    "network",
+    "docker",
+    "visualization",
+    "3d"
+  ],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -14,14 +24,19 @@
     "./core": {
       "types": "./dist/core.d.ts",
       "import": "./dist/core.js"
-    }
+    },
+    "./topology.schema.json": "./topology.schema.json"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "files": ["dist"],
+  "files": [
+    "dist",
+    "topology.schema.json"
+  ],
   "scripts": {
     "build": "rm -rf dist && tsc -p tsconfig.build.json",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "peerDependencies": {
     "@react-three/drei": "^10.0.0",
@@ -30,10 +45,18 @@
     "three": ">=0.159.0"
   },
   "peerDependenciesMeta": {
-    "@react-three/drei": { "optional": true },
-    "@react-three/fiber": { "optional": true },
-    "react": { "optional": true },
-    "three": { "optional": true }
+    "@react-three/drei": {
+      "optional": true
+    },
+    "@react-three/fiber": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "three": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@react-three/drei": "^10.0.7",
@@ -41,6 +64,7 @@
     "@types/react": "^19.1.2",
     "@types/three": "^0.169.0",
     "react": "^19.1.0",
-    "three": "^0.169.0"
+    "three": "^0.169.0",
+    "vitest": "^2.1.9"
   }
 }

@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://unpkg.com/infra3d/topology.schema.json",
+  "title": "infra3d topology",
+  "description": "Infrastructure as stacked layers. Edges point from the dependent to its dependency. Cross-references (edge targets, node layers) are checked by validateTopology().",
+  "type": "object",
+  "required": ["layers", "nodes", "edges"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "name": { "type": "string" },
+    "layers": {
+      "description": "Bottom to top, e.g. physical, network, container, endpoint.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "label"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "label": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "columns": {
+      "description": "Order of the layout columns (typically hosts).",
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "label", "type", "layer"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "label": { "type": "string" },
+          "type": {
+            "description": "Built-in types have their own shape and colour; any other string is drawn as a box.",
+            "anyOf": [
+              { "enum": ["site", "device", "host", "network", "container", "endpoint"] },
+              { "type": "string", "minLength": 1 }
+            ]
+          },
+          "layer": { "type": "string", "minLength": 1 },
+          "column": { "type": "string" },
+          "group": { "type": "string" },
+          "role": { "description": "'database' is drawn as a cylinder.", "type": "string" },
+          "check": { "description": "Health check target, e.g. https://app.example.com or tcp://10.0.0.5:22.", "type": "string" },
+          "offset": {
+            "description": "[x, z] offset relative to the computed position.",
+            "type": "array",
+            "items": { "type": "number" },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "meta": {
+            "type": "object",
+            "additionalProperties": { "type": ["string", "number"] }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["from", "to", "kind"],
+        "properties": {
+          "from": { "type": "string", "minLength": 1 },
+          "to": { "type": "string", "minLength": 1 },
+          "kind": {
+            "anyOf": [
+              { "enum": ["routes", "via", "auth", "member", "runs-on", "depends", "uses", "image", "uplink", "backup"] },
+              { "type": "string", "minLength": 1 }
+            ]
+          },
+          "label": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

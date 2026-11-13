@@ -4,7 +4,8 @@ import { CameraControls, Html, QuadraticBezierLine } from '@react-three/drei';
 import { computeLayout, type LayoutOptions, type Vec3 } from './layout.js';
 import { computeHighlight, type Highlight } from './graph.js';
 import type { Mesh } from 'three';
-import type { EdgeKind, HighlightMode, InfraEdge, InfraNode, NodeStatus, NodeType, Topology } from './types.js';
+import { resolveTheme, type InfraTheme } from './theme.js';
+import type { HighlightMode, InfraEdge, InfraNode, NodeStatus, NodeType, Topology } from './types.js';
 
 export interface InfraSceneProps {
   topology: Topology;
@@ -16,37 +17,14 @@ export interface InfraSceneProps {
   showAllLabels?: boolean;
   /** Live state per node: failed nodes pulse red, suspects are marked orange. */
   status?: Record<string, NodeStatus>;
+  /** Colours and fonts; anything left out falls back to DEFAULT_THEME. */
+  theme?: Partial<InfraTheme>;
+  /** Shortcut for `theme.background`. */
   background?: string;
   layout?: LayoutOptions;
   className?: string;
   style?: CSSProperties;
 }
-
-export const NODE_COLORS: Record<NodeType, string> = {
-  site: '#94a3b8',
-  device: '#cbd5e1',
-  host: '#f59e0b',
-  network: '#22d3ee',
-  container: '#a78bfa',
-  endpoint: '#34d399',
-};
-
-export const EDGE_COLORS: Record<EdgeKind, string> = {
-  routes: '#34d399',
-  via: '#34d399',
-  auth: '#facc15',
-  member: '#22d3ee',
-  'runs-on': '#f59e0b',
-  depends: '#a78bfa',
-  uses: '#f472b6',
-  image: '#f472b6',
-  uplink: '#94a3b8',
-  backup: '#fbbf24',
-};
-
-export const DOWN_COLOR = '#60a5fa';
-export const UP_COLOR = '#f87171';
-export const STATUS_COLORS: Record<'down' | 'suspect', string> = { down: '#ef4444', suspect: '#f59e0b' };
 
 export function InfraScene({
   topology,
@@ -56,7 +34,8 @@ export function InfraScene({
   hiddenLayers = [],
   showAllLabels = false,
   status,
-  background = '#0b1020',
+  theme: themeOverrides,
+  background,
   layout: layoutOpts,
   className,
   style,
@@ -66,6 +45,7 @@ export function InfraScene({
   const hidden = useMemo(() => new Set(hiddenLayers), [hiddenLayers]);
   const nodeById = useMemo(() => new Map(topology.nodes.map((n) => [n.id, n])), [topology]);
   const [hovered, setHovered] = useState<string | null>(null);
+  const theme = useMemo(() => resolveTheme(background ? { ...themeOverrides, background } : themeOverrides), [themeOverrides, background]);
 
   const visible = (n: InfraNode | undefined) => !!n && !hidden.has(n.layer);
   const { bounds } = layout;
@@ -77,8 +57,8 @@ export function InfraScene({
   return (
     <div className={className} style={{ position: 'relative', width: '100%', height: '100%', ...style }}>
       <Canvas camera={{ position: [center[0] + 10, center[1] + 45 * zoom, center[2] + 85 * zoom], fov: 45, near: 0.5, far: 1000 * zoom }} onPointerMissed={() => onSelect?.(null)}>
-        <color attach="background" args={[background]} />
-        <fog attach="fog" args={[background, 120 * zoom, 260 * zoom]} />
+        <color attach="background" args={[theme.background]} />
+        <fog attach="fog" args={[theme.background, 120 * zoom, 260 * zoom]} />
         <ambientLight intensity={0.55} />
         <directionalLight position={[40, 80, 40]} intensity={1.1} />
 
@@ -86,7 +66,7 @@ export function InfraScene({
 
         {topology.layers.map((l) =>
           hidden.has(l.id) ? null : (
-            <LayerPlane key={l.id} label={l.label} y={layout.layerY.get(l.id)!} bounds={bounds} columns={l.id === 'container' ? layout.columns : []} />
+            <LayerPlane key={l.id} theme={theme} label={l.label} y={layout.layerY.get(l.id)!} bounds={bounds} columns={l.id === 'container' ? layout.columns : []} />
           ),
         )}
 
@@ -95,7 +75,7 @@ export function InfraScene({
           const b = nodeById.get(e.to);
           if (!visible(a) || !visible(b)) return null;
           const faulty = !!status && isFaulty(status[e.from]) && isFaulty(status[e.to]);
-          return <EdgeLine key={i} edge={e} index={i} from={layout.positions.get(e.from)!} to={layout.positions.get(e.to)!} highlight={highlight} faulty={faulty} />;
+          return <EdgeLine key={i} theme={theme} edge={e} index={i} from={layout.positions.get(e.from)!} to={layout.positions.get(e.to)!} highlight={highlight} faulty={faulty} />;
         })}
 
         {topology.nodes.map((n) =>
@@ -103,6 +83,7 @@ export function InfraScene({
             <NodeMesh
               key={n.id}
               node={n}
+              theme={theme}
               position={layout.positions.get(n.id)!}
               selected={n.id === selectedId}
               hovered={n.id === hovered}
@@ -155,7 +136,7 @@ function CameraRig({ selectedPos, center, zoom = 1 }: { selectedPos?: Vec3; cent
   return <CameraControls ref={ref} makeDefault maxDistance={220 * zoom} minDistance={5} dollySpeed={0.6} />;
 }
 
-function LayerPlane({ label, y, bounds, columns }: { label: string; y: number; bounds: { minX: number; maxX: number; minZ: number; maxZ: number }; columns: { id: string; x: number; width: number; depth: number }[] }) {
+function LayerPlane({ theme, label, y, bounds, columns }: { theme: InfraTheme; label: string; y: number; bounds: { minX: number; maxX: number; minZ: number; maxZ: number }; columns: { id: string; x: number; width: number; depth: number }[] }) {
   const pad = 6;
   const w = bounds.maxX - bounds.minX + pad * 2;
   const d = bounds.maxZ - bounds.minZ + pad * 2;
@@ -165,20 +146,20 @@ function LayerPlane({ label, y, bounds, columns }: { label: string; y: number; b
     <group position={[0, y - 0.9, 0]}>
       <mesh position={[cx, 0, cz]} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[w, d]} />
-        <meshBasicMaterial color="#1e293b" transparent opacity={0.28} depthWrite={false} />
+        <meshBasicMaterial color={theme.plane} transparent opacity={0.28} depthWrite={false} />
       </mesh>
-      <PlaneOutline cx={cx} cz={cz} w={w} d={d} />
+      <PlaneOutline color={theme.planeOutline} cx={cx} cz={cz} w={w} d={d} />
       <Html position={[bounds.minX - pad, 0, bounds.maxZ + pad]} style={{ pointerEvents: 'none' }}>
-        <div style={layerLabelStyle}>{label}</div>
+        <div style={{ ...layerLabelStyle, color: theme.layerLabel, fontFamily: theme.fontFamily }}>{label}</div>
       </Html>
       {columns.map((c) => (
         <group key={c.id}>
           <mesh position={[c.x, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
             <planeGeometry args={[c.width + 3, c.depth + 3]} />
-            <meshBasicMaterial color="#334155" transparent opacity={0.35} depthWrite={false} />
+            <meshBasicMaterial color={theme.column} transparent opacity={0.35} depthWrite={false} />
           </mesh>
           <Html position={[c.x, 0, -c.depth / 2 - 2.5]} center style={{ pointerEvents: 'none' }}>
-            <div style={columnLabelStyle}>{c.id}</div>
+            <div style={{ ...columnLabelStyle, color: theme.columnLabel, fontFamily: theme.fontFamily }}>{c.id}</div>
           </Html>
         </group>
       ))}
@@ -186,7 +167,7 @@ function LayerPlane({ label, y, bounds, columns }: { label: string; y: number; b
   );
 }
 
-function PlaneOutline({ cx, cz, w, d }: { cx: number; cz: number; w: number; d: number }) {
+function PlaneOutline({ color, cx, cz, w, d }: { color: string; cx: number; cz: number; w: number; d: number }) {
   const pts = useMemo(() => {
     const x0 = cx - w / 2, x1 = cx + w / 2, z0 = cz - d / 2, z1 = cz + d / 2;
     return new Float32Array([x0, 0, z0, x1, 0, z0, x1, 0, z0, x1, 0, z1, x1, 0, z1, x0, 0, z1, x0, 0, z1, x0, 0, z0]);
@@ -196,22 +177,22 @@ function PlaneOutline({ cx, cz, w, d }: { cx: number; cz: number; w: number; d: 
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" args={[pts, 3]} />
       </bufferGeometry>
-      <lineBasicMaterial color="#475569" transparent opacity={0.6} />
+      <lineBasicMaterial color={color} transparent opacity={0.6} />
     </lineSegments>
   );
 }
 
-function EdgeLine({ edge, index, from, to, highlight, faulty }: { edge: InfraEdge; index: number; from: Vec3; to: Vec3; highlight: Highlight | null; faulty: boolean }) {
+function EdgeLine({ theme, edge, index, from, to, highlight, faulty }: { theme: InfraTheme; edge: InfraEdge; index: number; from: Vec3; to: Vec3; highlight: Highlight | null; faulty: boolean }) {
   const sameLayer = Math.abs(from[1] - to[1]) < 0.01;
   const mid: Vec3 = [(from[0] + to[0]) / 2, (from[1] + to[1]) / 2 + (sameLayer ? 1.5 + Math.hypot(to[0] - from[0], to[2] - from[2]) * 0.12 : 0), (from[2] + to[2]) / 2];
 
-  let color = EDGE_COLORS[edge.kind];
+  let color = theme.edgeColors[edge.kind] ?? theme.defaultEdgeColor;
   let opacity = edge.kind === 'via' ? 0.12 : 0.35;
   let width = 1;
-  if (faulty) { color = STATUS_COLORS.suspect; opacity = 0.8; width = 2; }
+  if (faulty) { color = theme.suspect; opacity = 0.8; width = 2; }
   if (highlight) {
-    if (highlight.down.edges.has(index)) { color = DOWN_COLOR; opacity = 0.95; width = 2.5; }
-    else if (highlight.up.edges.has(index)) { color = UP_COLOR; opacity = 0.95; width = 2.5; }
+    if (highlight.down.edges.has(index)) { color = theme.needs; opacity = 0.95; width = 2.5; }
+    else if (highlight.up.edges.has(index)) { color = theme.affects; opacity = 0.95; width = 2.5; }
     else { opacity = 0.04; }
   }
   return (
@@ -232,15 +213,15 @@ function EdgeLine({ edge, index, from, to, highlight, faulty }: { edge: InfraEdg
 }
 
 function NodeMesh({
-  node, position, selected, hovered, state, health, showLabel, onHover, onSelect,
+  node, theme, position, selected, hovered, state, health, showLabel, onHover, onSelect,
 }: {
-  node: InfraNode; position: Vec3; selected: boolean; hovered: boolean; state: NodeState; health?: NodeStatus; showLabel: boolean;
+  node: InfraNode; theme: InfraTheme; position: Vec3; selected: boolean; hovered: boolean; state: NodeState; health?: NodeStatus; showLabel: boolean;
   onHover: (id: string | null) => void; onSelect: (id: string) => void;
 }) {
-  const base = NODE_COLORS[node.type];
+  const base = theme.nodeColors[node.type] ?? theme.defaultNodeColor;
   const dim = state === 'dim';
-  const ring = state === 'down' ? DOWN_COLOR : state === 'up' ? UP_COLOR : null;
-  const alarm = health === 'down' || health === 'suspect' ? STATUS_COLORS[health] : null;
+  const ring = state === 'down' ? theme.needs : state === 'up' ? theme.affects : null;
+  const alarm = health === 'down' || health === 'suspect' ? theme[health] : null;
   const isDb = node.role === 'database';
   const scale = selected ? 1.35 : hovered ? 1.15 : 1;
 
@@ -273,7 +254,7 @@ function NodeMesh({
       {alarm && <AlarmRing color={alarm} pulse={health === 'down'} />}
       {showLabel && (
         <Html position={[0, node.type === 'host' ? 1.6 : 1.2, 0]} center distanceFactor={32} style={{ pointerEvents: 'none' }} zIndexRange={[10, 0]}>
-          <div style={{ ...nodeLabelStyle, opacity: dim ? 0.25 : 1, borderColor: selected ? '#fff' : alarm ?? ring ?? 'transparent', fontWeight: node.type === 'host' || selected ? 600 : 400 }}>
+          <div style={{ ...nodeLabelStyle, color: theme.labelText, background: theme.labelBackground, fontFamily: theme.fontFamily, opacity: dim ? 0.25 : 1, borderColor: selected ? '#fff' : alarm ?? ring ?? 'transparent', fontWeight: node.type === 'host' || selected ? 600 : 400 }}>
             {node.label}
           </div>
         </Html>
@@ -305,13 +286,13 @@ function Shape({ type, isDb }: { type: NodeType; isDb: boolean }) {
     case 'network': return <torusGeometry args={[0.85, 0.28, 12, 32]} />;
     case 'endpoint': return <octahedronGeometry args={[0.75]} />;
     case 'container': return isDb ? <cylinderGeometry args={[0.6, 0.6, 1.1, 20]} /> : <boxGeometry args={[1.1, 1.1, 1.1]} />;
+    default: return isDb ? <cylinderGeometry args={[0.6, 0.6, 1.1, 20]} /> : <boxGeometry args={[1.2, 1.2, 1.2]} />;
   }
 }
 
 const nodeLabelStyle: CSSProperties = {
-  font: '12px/1.2 system-ui, sans-serif',
-  color: '#e2e8f0',
-  background: 'rgba(15, 23, 42, 0.82)',
+  fontSize: 12,
+  lineHeight: 1.2,
   padding: '2px 6px',
   borderRadius: 4,
   border: '1px solid transparent',
@@ -319,11 +300,12 @@ const nodeLabelStyle: CSSProperties = {
   userSelect: 'none',
 };
 const layerLabelStyle: CSSProperties = {
-  font: '600 13px/1 system-ui, sans-serif',
-  color: '#94a3b8',
+  fontSize: 13,
+  fontWeight: 600,
+  lineHeight: 1,
   letterSpacing: '0.06em',
   textTransform: 'uppercase',
   whiteSpace: 'nowrap',
   userSelect: 'none',
 };
-const columnLabelStyle: CSSProperties = { ...layerLabelStyle, color: '#f59e0b', fontSize: 12 };
+const columnLabelStyle: CSSProperties = { ...layerLabelStyle, fontSize: 12 };
