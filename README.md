@@ -92,6 +92,14 @@ npm test
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the architecture and how to add an importer.
 
+## How this was built
+
+infra3d was written with [Claude Code](https://claude.com/claude-code), Anthropic's AI coding
+agent. I came up with the idea, made the design decisions, reviewed the changes and run it
+against my own homelab every day. The test suite, CI and the [security notes](apps/app#security)
+are there so you don't have to take that on trust. Questions about how something works are
+welcome in the issues.
+
 ## License
 
 [MIT](LICENSE)
