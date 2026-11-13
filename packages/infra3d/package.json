@@ -43,8 +43,7 @@
   "scripts": {
     "build": "rm -rf dist && tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "prepack": "npm run build"
+    "test": "vitest run"
   },
   "peerDependencies": {
     "@react-three/drei": "^10.0.0",
