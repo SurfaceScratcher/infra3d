@@ -12,6 +12,8 @@ networks, containers and endpoints as stacked 3D layers you can rotate, zoom and
 - **Bring your own data:** a documented JSON format, or `infra3d-import-compose` to build it
   from Docker Compose files.
 
+![infra3d demo: a simulated database failure narrowed down to its likely causes, with the dependencies and impact of the selected container highlighted](https://raw.githubusercontent.com/SurfaceScratcher/infra3d/main/docs/screenshot.png)
+
 **[Live demo](https://surfacescratcher.github.io/infra3d/)** · [Library docs](packages/infra3d) · [Importer](packages/import-compose) · [Contributing](CONTRIBUTING.md)
 
 ## Quick start

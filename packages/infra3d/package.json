@@ -69,12 +69,11 @@
     "@react-three/drei": "^10.0.7",
     "@react-three/fiber": "^9.1.2",
     "@types/react": "^19.1.2",
-    "@types/three": "^0.169.0",
+    "@types/three": "^0.187.0",
     "react": "^19.1.0",
-    "three": "^0.169.0",
-    "vitest": "^2.1.9"
+    "three": "^0.187.0"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   }
 }
