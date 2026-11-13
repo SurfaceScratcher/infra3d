@@ -1,6 +1,6 @@
 {
   "name": "infra3d-import-compose",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Builds an infra3d topology from Docker Compose files (plain stack directories or an Ansible inventory).",
   "license": "MIT",
   "repository": {
@@ -40,7 +40,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "infra3d": "^0.1.0",
+    "infra3d": "^0.1.1",
     "yaml": "^2.6.0"
   },
   "devDependencies": {
