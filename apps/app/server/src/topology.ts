@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import { validateTopology, type Topology } from 'infra3d/core';
-import { ansibleSource, buildTopology, directorySource, isAnsibleRepo, type ImportConfig } from 'infra3d-import-compose';
+import { ansibleSource, buildTopology, createImportReport, directorySource, isAnsibleRepo, type ImportConfig, type ImportReport } from 'infra3d-import-compose';
 import { config } from './config.js';
 
 export interface TopologySource {
@@ -30,11 +30,13 @@ function read(): Topology {
   const warnings: string[] = [];
   const topology = buildTopology(input, importConfig, warnings);
   source.warnings = warnings;
+  lastImport = () => createImportReport(input, importConfig, warnings);
   if (!topology.nodes.some((n) => n.type === 'container')) throw new Error(`no compose files found below ${config.stacksDir}`);
   return topology;
 }
 
 let current: Topology | null = null;
+let lastImport: (() => ImportReport) | null = null;
 let currentJson = '';
 export const source: TopologySource = {
   kind: config.topologyFile ? 'file' : 'import',
@@ -64,3 +66,6 @@ export function reload(): boolean {
 }
 
 export const topology = () => current;
+
+/** The last import, anonymized for bug reports; null when the topology comes from a file. */
+export const importReport = () => lastImport?.() ?? null;

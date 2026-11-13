@@ -5,7 +5,7 @@ import path from 'node:path';
 import { runChecks, state } from './checks.js';
 import { config } from './config.js';
 import { notify, notifyTargets } from './notify.js';
-import { reload, source, topology } from './topology.js';
+import { importReport, reload, source, topology } from './topology.js';
 
 // infra3d app: imports the compose stacks, probes every endpoint and serves the 3D view.
 
@@ -72,6 +72,12 @@ const server = http.createServer(async (req, res) => {
     if (!authorized(req)) return void res.writeHead(401, { 'WWW-Authenticate': 'Basic realm="infra3d", charset="UTF-8"' }).end();
     if (url.pathname === '/api/state' && req.method === 'GET') return json(res, apiState());
     if (url.pathname === '/api/check' && req.method === 'POST') return (await cycle(), json(res, apiState()));
+    if (url.pathname === '/api/report' && req.method === 'GET') {
+      const report = importReport();
+      if (!report) return json(res, { error: 'no import report: the topology comes from INFRA3D_TOPOLOGY' }, 404);
+      res.setHeader('Content-Disposition', 'attachment; filename="infra3d-import-report.json"');
+      return json(res, report);
+    }
     if (url.pathname.startsWith('/api/')) return json(res, { error: 'not found' }, 404);
     if (req.method !== 'GET' && req.method !== 'HEAD') return void res.writeHead(405).end();
     serveStatic(url.pathname, res);

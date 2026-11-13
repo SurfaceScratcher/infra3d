@@ -34,7 +34,7 @@ export function isLoopbackPort(p: PortEntry): boolean {
   return !!ip && /^(127\.|::1$|localhost$)/.test(ip);
 }
 
-const labelPairs = (labels: ComposeService['labels']): [string, string][] =>
+export const labelPairs = (labels: ComposeService['labels']): [string, string][] =>
   Array.isArray(labels)
     ? labels.map((l) => {
         const i = l.indexOf('=');

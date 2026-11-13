@@ -24,6 +24,12 @@ To try your own infrastructure in the demo without committing it:
 npm run import -- ../my-stacks -o apps/app/web/src/data/local.json
 ```
 
+To reproduce an importer bug from an issue, replay the attached report:
+
+```bash
+npm run import -- report.json -o apps/app/web/src/data/local.json
+```
+
 `local.json` and `infra3d.config.json` are gitignored. Please never commit real hostnames,
 addresses or configs, including in test fixtures and screenshots. Use `example.com` and
 private address ranges.
@@ -80,8 +86,9 @@ Proxmox, NetBox …) is usually one small file in `src/sources/` plus fixtures.
   in the review.
 - Keep PRs focused; one topic per PR.
 - Add or update tests for behaviour changes.
-- Run `npx changeset` if a published package changes and describe the change in one line.
-  Below 1.0, breaking changes are a `minor` bump.
+- Run `npx changeset` if a published package or the app (`@infra3d/app`) changes and describe
+  the change in one line. Below 1.0, breaking changes are a `minor` bump. The app's version is
+  the Docker image tag; releases of `infra3d` or `infra3d-import-compose` bump it as well.
 - Code, comments and docs are in English. Match the style of the surrounding code.
 - Changes to the topology format need an update to `types.ts`, `topology.schema.json`,
   `validate.ts` and the README together.

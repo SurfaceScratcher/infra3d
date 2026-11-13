@@ -1,7 +1,7 @@
 {
   "name": "@infra3d/app",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.3.1",
   "description": "Self-hosted infra3d: imports compose stacks, checks every endpoint and shows the 3D view with root-cause hints.",
   "type": "module",
   "scripts": {
@@ -17,8 +17,8 @@
     "build:demo": "vite build --mode demo"
   },
   "dependencies": {
-    "infra3d": "*",
-    "infra3d-import-compose": "*"
+    "infra3d": "0.3.1",
+    "infra3d-import-compose": "0.2.0"
   },
   "devDependencies": {
     "@react-three/drei": "^10.0.7",
