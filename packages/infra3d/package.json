@@ -3,6 +3,13 @@
   "version": "0.1.0",
   "description": "Navigable 3D view of IT infrastructure for React: hosts, networks, containers and endpoints as stacked layers, with dependency and impact highlighting.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SurfaceScratcher/infra3d.git",
+    "directory": "packages/infra3d"
+  },
+  "homepage": "https://github.com/SurfaceScratcher/infra3d/tree/main/packages/infra3d#readme",
+  "bugs": "https://github.com/SurfaceScratcher/infra3d/issues",
   "type": "module",
   "sideEffects": false,
   "keywords": [

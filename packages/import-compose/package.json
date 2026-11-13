@@ -3,6 +3,13 @@
   "version": "0.1.0",
   "description": "Builds an infra3d topology from Docker Compose files (plain stack directories or an Ansible inventory).",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SurfaceScratcher/infra3d.git",
+    "directory": "packages/import-compose"
+  },
+  "homepage": "https://github.com/SurfaceScratcher/infra3d/tree/main/packages/import-compose#readme",
+  "bugs": "https://github.com/SurfaceScratcher/infra3d/issues",
   "type": "module",
   "keywords": [
     "infra3d",

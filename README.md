@@ -1,5 +1,7 @@
 # infra3d
 
+[![CI](https://github.com/SurfaceScratcher/infra3d/actions/workflows/ci.yml/badge.svg)](https://github.com/SurfaceScratcher/infra3d/actions/workflows/ci.yml)
+
 See how your infrastructure hangs together. infra3d is a React component that shows hosts,
 networks, containers and endpoints as stacked 3D layers you can rotate, zoom and click through.
 
@@ -10,7 +12,7 @@ networks, containers and endpoints as stacked 3D layers you can rotate, zoom and
 - **Bring your own data:** a documented JSON format, or `infra3d-import-compose` to build it
   from Docker Compose files.
 
-[Library docs](packages/infra3d) · [Importer](packages/import-compose) · [Contributing](CONTRIBUTING.md)
+**[Live demo](https://surfacescratcher.github.io/infra3d/)** · [Library docs](packages/infra3d) · [Importer](packages/import-compose) · [Contributing](CONTRIBUTING.md)
 
 ## Quick start
 
