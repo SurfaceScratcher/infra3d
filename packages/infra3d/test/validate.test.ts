@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { validateTopology } from '../src/validate.js';
-import example from '../../../apps/demo/src/data/example.json';
+import example from '../../../apps/app/web/src/data/example.json';
 import { topo } from './fixture.js';
 
 describe('validateTopology', () => {

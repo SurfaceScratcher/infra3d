@@ -17,6 +17,8 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -28,6 +30,7 @@ jobs:
       - run: npm run build -w infra3d -w infra3d-import-compose
       # Node 24 ships npm 11, which supports trusted publishing
       - uses: changesets/action@v2
+        id: changesets
         with:
           version-script: npx changeset version
           publish-script: npx changeset publish
@@ -35,3 +38,19 @@ jobs:
           pr-title: 'Version packages'
         env:
           NPM_CONFIG_PROVENANCE: true
+      # The app image follows the version of the infra3d package
+      - id: version
+        if: steps.changesets.outputs.published == 'true'
+        env:
+          PUBLISHED: ${{ steps.changesets.outputs.published-packages }}
+        run: echo "version=$(jq -r '.[] | select(.name == "infra3d") | .version' <<< "$PUBLISHED")" >> "$GITHUB_OUTPUT"
+
+  image:
+    needs: release
+    if: needs.release.outputs.version != ''
+    uses: ./.github/workflows/image.yml
+    with:
+      version: ${{ needs.release.outputs.version }}
+    permissions:
+      contents: read
+      packages: write

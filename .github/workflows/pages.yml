@@ -24,12 +24,13 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - run: npm run build -w @infra3d/demo
+      - run: npm run build -w infra3d -w infra3d-import-compose
+      - run: npm run build:demo -w @infra3d/app
         env:
           BASE_PATH: /${{ github.event.repository.name }}/
       - uses: actions/upload-pages-artifact@v5
         with:
-          path: apps/demo/dist
+          path: apps/app/web/dist
 
   deploy:
     needs: build

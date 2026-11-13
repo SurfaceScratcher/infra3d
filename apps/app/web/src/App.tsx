@@ -1,16 +1,21 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   InfraScene, DEFAULT_THEME, NODE_COLORS, DOWN_COLOR, UP_COLOR, STATUS_COLORS,
   analyzeHealth, checkTarget, computeHighlight, dependencyClosure, neighbors, validateTopology,
 } from 'infra3d';
-import type { BuiltinEdgeKind, BuiltinNodeType, CheckResult, HighlightMode, InfraEdge, InfraSceneHandle, NodeType, Topology } from 'infra3d';
-import example from './data/example.json';
+import type { BuiltinEdgeKind, BuiltinNodeType, CheckResult, HighlightMode, InfraEdge, InfraNode, InfraSceneHandle, NodeType, Topology } from 'infra3d';
+import { clock, since, useLiveState, type LiveState } from './live';
 
-// Local data (written by the importer, gitignored) takes precedence over the example.
-const local = Object.values(import.meta.glob<Topology>('./data/local.json', { eager: true, import: 'default' }))[0];
-const topology = local ?? (example as Topology);
-const validation = validateTopology(topology);
-if (!validation.valid) console.warn('infra3d: invalid topology', validation.errors);
+// Two modes: the static demo (GitHub Pages, `--mode demo`) and the live app served by the infra3d server.
+const DEMO = import.meta.env.VITE_DEMO === 'true';
+
+/** Demo data, loaded only in demo builds so that neither file ends up in the app bundle. */
+async function loadDemoTopology(): Promise<Topology> {
+  if (import.meta.env.VITE_DEMO !== 'true') throw new Error('not a demo build');
+  // Local data (written by the importer, gitignored) takes precedence over the example
+  const local = Object.values(import.meta.glob<Topology>('./data/local.json', { import: 'default' }))[0];
+  return local ? local() : ((await import('./data/example.json')).default as Topology);
+}
 
 const TYPE_LABEL: Record<BuiltinNodeType, string> = {
   site: 'Site',
@@ -38,23 +43,51 @@ const EDGE_LABEL: Record<BuiltinEdgeKind, [string, string]> = {
 const typeLabel = (t: NodeType) => TYPE_LABEL[t as BuiltinNodeType] ?? t;
 const edgeLabel = (e: InfraEdge, dir: 0 | 1) => EDGE_LABEL[e.kind as BuiltinEdgeKind]?.[dir] ?? e.kind;
 
-const nodeById = new Map(topology.nodes.map((n) => [n.id, n]));
-const endpoints = topology.nodes.filter((n) => checkTarget(n));
-const proxiesOf = (id: string) => topology.edges.filter((e) => e.from === id && e.kind === 'via').map((e) => e.to);
-
 /** What outside-in health checks would report if the given nodes were broken. */
-function simulateChecks(broken: string[]): Record<string, CheckResult> {
+function simulateChecks(topology: Topology, endpoints: InfraNode[], broken: string[]): Record<string, CheckResult> {
   const failed = new Set(broken);
   const hit = (id: string) => [...dependencyClosure(topology, id)].some((x) => failed.has(x));
   const results: Record<string, CheckResult> = {};
   for (const n of endpoints) {
-    const proxies = proxiesOf(n.id);
+    const proxies = topology.edges.filter((e) => e.from === n.id && e.kind === 'via').map((e) => e.to);
     results[n.id] = { ok: !hit(n.id), answered: proxies.length > 0 && !proxies.some(hit) };
   }
   return results;
 }
 
 export function App() {
+  return DEMO ? <Demo /> : <Live />;
+}
+
+function Demo() {
+  const [topology, setTopology] = useState<Topology | null>(null);
+  useEffect(() => void loadDemoTopology().then(setTopology), []);
+  return topology ? <Explorer topology={topology} /> : null;
+}
+
+function Live() {
+  const { state, error, busy, checkNow } = useLiveState();
+  if (state?.topology) return <Explorer topology={state.topology} live={state} busy={busy} onCheckNow={checkNow} />;
+  return (
+    <div className="setup">
+      <h1>infra3d</h1>
+      {!state && !error && <p className="muted">Connecting …</p>}
+      {error && <p className="error">Cannot reach the infra3d server: {error}</p>}
+      {state && (
+        <>
+          <p className="error">No topology yet{state.source.error ? `: ${state.source.error}` : '.'}</p>
+          <p className="muted">
+            Mount your compose stacks at <code>/stacks</code> (one folder per host, one per stack) or set <code>INFRA3D_TOPOLOGY</code> to a
+            topology file. Hosts, sites and special cases go into <code>/config/infra3d.config.json</code>.
+          </p>
+          <button className="action" onClick={checkNow} disabled={busy}>Try again</button>
+        </>
+      )}
+    </div>
+  );
+}
+
+function Explorer({ topology, live, busy, onCheckNow }: { topology: Topology; live?: LiveState; busy?: boolean; onCheckNow?: () => void }) {
   const [selected, setSelected] = useState<string | null>(null);
   const [mode, setMode] = useState<HighlightMode>('both');
   const [hiddenLayers, setHiddenLayers] = useState<string[]>([]);
@@ -63,9 +96,13 @@ export function App() {
   const [broken, setBroken] = useState<string[]>([]);
   const scene = useRef<InfraSceneHandle>(null);
 
-  const highlight = useMemo(() => computeHighlight(topology, selected, mode), [selected, mode]);
+  const validation = useMemo(() => validateTopology(topology), [topology]);
+  const nodeById = useMemo(() => new Map(topology.nodes.map((n) => [n.id, n])), [topology]);
+  const endpoints = useMemo(() => topology.nodes.filter((n) => checkTarget(n)), [topology]);
+  const highlight = useMemo(() => computeHighlight(topology, selected, mode), [topology, selected, mode]);
   const node = selected ? nodeById.get(selected) : undefined;
   const nb = selected ? neighbors(topology, selected) : null;
+  const label = (id: string) => nodeById.get(id)?.label ?? id;
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -73,18 +110,26 @@ export function App() {
     return topology.nodes
       .filter((n) => n.label.toLowerCase().includes(q) || n.group?.toLowerCase().includes(q) || n.column?.toLowerCase().includes(q))
       .slice(0, 12);
-  }, [query]);
+  }, [topology, query]);
 
-  const health = useMemo(() => (broken.length ? analyzeHealth(topology, simulateChecks(broken)) : null), [broken]);
+  // A running simulation takes precedence over the live state
+  const simulation = useMemo(
+    () => (broken.length ? analyzeHealth(topology, simulateChecks(topology, endpoints, broken)) : null),
+    [topology, endpoints, broken],
+  );
+  const status = simulation?.status ?? live?.status;
   const toggleBroken = (id: string) => setBroken((b) => (b.includes(id) ? b.filter((x) => x !== id) : [...b, id]));
-
   const toggleLayer = (id: string) => setHiddenLayers((h) => (h.includes(id) ? h.filter((x) => x !== id) : [...h, id]));
+
+  const checks = live ? Object.values(live.checks) : [];
+  const reachable = checks.filter((c) => c.ok).length;
+  const check = node && live?.checks[node.id];
 
   return (
     <div className="app">
       <aside className="panel">
         <header>
-          <h1>Infra 3D</h1>
+          <h1>infra3d</h1>
           <p className="muted">{topology.name} · {topology.nodes.length} nodes · {topology.edges.length} connections</p>
         </header>
 
@@ -95,20 +140,60 @@ export function App() {
           </section>
         )}
 
-        {health && (
+        {live && (
+          <section className={`live ${live.down.length ? 'bad' : 'good'}`}>
+            <div className="live-head">
+              <strong>{live.down.length ? `${live.down.length} down` : 'All reachable'}</strong>
+              <button className="action" onClick={onCheckNow} disabled={busy}>{busy ? 'Checking …' : 'Check now'}</button>
+            </div>
+            <p className="muted small">
+              {reachable} of {checks.length} endpoints · checked {clock(live.checkedAt)} · every {live.intervalSec}s
+            </p>
+            {live.source.error && <p className="error small">Topology: {live.source.error} (showing the last good one)</p>}
+            {live.down.length > 1 && (live.causes[0]?.count ?? 0) > 1 && (
+              <p className="small">
+                Most likely shared cause:{' '}
+                <button className="link" onClick={() => setSelected(live.causes[0].id)}>{label(live.causes[0].id)}</button>
+                <span className="muted"> (explains {live.causes[0].count})</span>
+              </p>
+            )}
+            <ul className="problems">
+              {live.down.map((id) => {
+                const suspects = live.suspects[id] ?? [];
+                return (
+                  <li key={id}>
+                    <button className="link strong" onClick={() => setSelected(id)}>{label(id)}</button>
+                    <span className="small"> {live.checks[id]?.error ?? 'unreachable'} · {since(live.checks[id]?.since ?? null)}</span>
+                    <div className="muted small">
+                      {suspects.length ? (
+                        <>Suspects: {suspects.slice(0, 3).map((s, i) => (
+                          <span key={s}>{i > 0 && ', '}<button className="link" onClick={() => setSelected(s)}>{label(s)}</button></span>
+                        ))}</>
+                      ) : (
+                        'Everything below answers – the fault is in the service itself.'
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
+
+        {simulation && (
           <section className="simulation">
             <h2>Simulated failure</h2>
             <p>
-              <span style={{ color: STATUS_COLORS.down }}>{health.down.length} of {endpoints.length} endpoints down</span>
-              {' '}· broken: {broken.map((id) => nodeById.get(id)?.label).join(', ')}
+              <span style={{ color: STATUS_COLORS.down }}>{simulation.down.length} of {endpoints.length} endpoints down</span>
+              {' '}· broken: {broken.map(label).join(', ')}
             </p>
-            {health.causes.length > 0 ? (
+            {simulation.causes.length > 0 ? (
               <>
                 <h3>Most likely causes</h3>
                 <ul className="edges">
-                  {health.causes.slice(0, 4).map((c) => (
+                  {simulation.causes.slice(0, 4).map((c) => (
                     <li key={c.id}>
-                      <button onClick={() => setSelected(c.id)}><Dot type={nodeById.get(c.id)!.type} /> {nodeById.get(c.id)!.label}</button>
+                      <button onClick={() => setSelected(c.id)}><Dot type={nodeById.get(c.id)!.type} /> {label(c.id)}</button>
                       <span className="muted"> explains {c.count}</span>
                     </li>
                   ))}
@@ -165,7 +250,12 @@ export function App() {
         {node && nb ? (
           <section className="details">
             <h2><Dot type={node.type} /> {node.label}</h2>
-            <p className="muted">{typeLabel(node.type)}{health ? ` · ${health.status[node.id]}` : ''}{node.column ? ` · ${node.column}` : ''}</p>
+            <p className="muted">{typeLabel(node.type)}{status?.[node.id] ? ` · ${status[node.id]}` : ''}{node.column ? ` · ${node.column}` : ''}</p>
+            {check && (
+              <p className="small">
+                {check.target} · {check.ok ? `${check.ms} ms` : check.error ?? 'not checked yet'}{check.since ? ` · ${since(check.since)}` : ''}
+              </p>
+            )}
             {node.meta && (
               <dl>
                 {Object.entries(node.meta).map(([k, v]) => (
@@ -179,8 +269,8 @@ export function App() {
                 <span style={{ color: UP_COLOR }}>affects {highlight.up.nodes.size - 1}</span>
               </p>
             )}
-            <EdgeList title="Depends on" edges={nb.outgoing} dir={0} onPick={setSelected} />
-            <EdgeList title="Used by" edges={nb.incoming} dir={1} onPick={setSelected} />
+            <EdgeList title="Depends on" edges={nb.outgoing} dir={0} nodeById={nodeById} onPick={setSelected} />
+            <EdgeList title="Used by" edges={nb.incoming} dir={1} nodeById={nodeById} onPick={setSelected} />
             <div className="actions">
               <button className="action" onClick={() => toggleBroken(node.id)}>
                 {broken.includes(node.id) ? 'Repair this node' : 'Simulate failure here'}
@@ -207,13 +297,13 @@ export function App() {
 
       <main className="stage">
         <button className="fit" onClick={() => { setSelected(null); scene.current?.fitAll(); }}>Show all</button>
-        <InfraScene ref={scene} topology={topology} status={health?.status} selectedId={selected} onSelect={setSelected} mode={mode} hiddenLayers={hiddenLayers} showAllLabels={showAll} />
+        <InfraScene ref={scene} topology={topology} status={status} selectedId={selected} onSelect={setSelected} mode={mode} hiddenLayers={hiddenLayers} showAllLabels={showAll} />
       </main>
     </div>
   );
 }
 
-function EdgeList({ title, edges, dir, onPick }: { title: string; edges: InfraEdge[]; dir: 0 | 1; onPick: (id: string) => void }) {
+function EdgeList({ title, edges, dir, nodeById, onPick }: { title: string; edges: InfraEdge[]; dir: 0 | 1; nodeById: Map<string, InfraNode>; onPick: (id: string) => void }) {
   if (!edges.length) return null;
   return (
     <>

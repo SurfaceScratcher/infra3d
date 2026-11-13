@@ -1,0 +1,11 @@
+**/node_modules
+**/dist
+.git
+.github
+.changeset
+docs
+**/*.test.ts
+**/test
+# Real infrastructure data never goes into the image
+**/data/local.json
+infra3d.config.json
