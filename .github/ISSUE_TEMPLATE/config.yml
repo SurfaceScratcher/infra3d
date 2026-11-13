@@ -1,1 +1,8 @@
-blank_issues_enabled: true
+blank_issues_enabled: false
+contact_links:
+  - name: Questions and ideas
+    url: https://github.com/SurfaceScratcher/infra3d/discussions
+    about: Setup questions, "would this work with X?", ideas and showing your setup go to Discussions.
+  - name: Security vulnerability
+    url: https://github.com/SurfaceScratcher/infra3d/security/advisories/new
+    about: Please report vulnerabilities privately, not as a public issue.

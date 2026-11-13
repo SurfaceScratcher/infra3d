@@ -1,8 +1,9 @@
 # Contributing
 
 Thanks for helping! Bug reports, importers for new data sources, layout improvements and
-docs are all welcome. For larger changes, please open an issue first so we can agree on
-the approach.
+docs are all welcome. For larger changes, please open an issue or start a
+[discussion](https://github.com/SurfaceScratcher/infra3d/discussions) first so we can agree on
+the approach. Questions and ideas belong in Discussions, bugs in issues.
 
 ## Setup
 
