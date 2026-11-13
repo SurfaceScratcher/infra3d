@@ -1,76 +1,62 @@
 # infra3d
 
-A React component that shows IT infrastructure as stacked 3D layers
-(hardware → networks → containers → endpoints) you can rotate, zoom and click through.
-Selecting a node highlights what it **needs** (blue) and what is **affected** when it fails (red).
+See how your infrastructure hangs together. infra3d is a React component that shows hosts,
+networks, containers and endpoints as stacked 3D layers you can rotate, zoom and click through.
 
-```bash
-npm install
-npm run dev        # demo with the example topology (apps/demo/src/data/example.json)
-```
+- **Dependencies and impact:** select a node to highlight what it **needs** (blue) and what
+  **fails with it** (red).
+- **Root-cause hints:** feed in endpoint health checks and `analyzeHealth()` narrows a failure
+  down to the containers, networks or hosts that can explain it.
+- **Bring your own data:** a documented JSON format, or `infra3d-import-compose` to build it
+  from Docker Compose files.
 
-## Repository layout
+[Library docs](packages/infra3d) · [Importer](packages/import-compose) · [Contributing](CONTRIBUTING.md)
 
-| Path | What |
-| --- | --- |
-| `packages/infra3d` | The library (`infra3d` on npm): `<InfraScene>`, layout, graph helpers |
-| `packages/import-compose` | Importer that builds a topology from Docker Compose files |
-| `apps/demo` | Demo app, also published as the live demo |
-
-## Usage
+## Quick start
 
 ```bash
 npm install infra3d three @react-three/fiber @react-three/drei
 ```
 
 ```tsx
-import { InfraScene, type Topology } from 'infra3d';
+import { useState } from 'react';
+import { InfraScene } from 'infra3d';
+import topology from './topology.json';
 
-<InfraScene
-  topology={topology}
-  selectedId={selected}
-  onSelect={setSelected}
-  mode="both"                 // 'deps' | 'impact' | 'both'
-  hiddenLayers={['network']}
-/>
+export function Infra() {
+  const [selected, setSelected] = useState<string | null>(null);
+  return (
+    <div style={{ height: 600 }}>
+      <InfraScene topology={topology} selectedId={selected} onSelect={setSelected} />
+    </div>
+  );
+}
 ```
 
-The scene fills its parent, so give the parent a height.
-Requires React 19, `@react-three/fiber` 9 and `@react-three/drei` 10.
-
-`infra3d/core` contains the framework-free part (types, layout, graph traversal)
-and can be used in Node without React or three.js.
-
-## Data model
-
-```ts
-{ layers: [{ id, label }], columns?: string[],
-  nodes:  [{ id, label, type, layer, column?, group?, role?, offset?, meta? }],
-  edges:  [{ from, to, kind, label? }] }
-```
-
-Edges always point from the dependent to its dependency
-(endpoint → container → network → host → site). Both highlight directions follow from that.
-`backup` edges do not propagate a failure further.
-
-Layout: nodes of the anchor layer (`container`) sit on a grid, column = `column` (host),
-row = `group` (stack). All other nodes are placed at the centroid of their neighbours,
-so networks and endpoints end up above or below "their" containers.
-
-## Your own data
-
-`infra3d-import-compose` builds a topology from Docker Compose files:
-containers, networks, `depends_on`, endpoints from Traefik `Host()` rules and published
-ports, and references between services. See [packages/import-compose](packages/import-compose).
+Generate `topology.json` from your compose stacks:
 
 ```bash
-npx infra3d-import-compose ./stacks -c infra3d.config.json -o topology.json
+npx infra3d-import-compose ./stacks -o topology.json
 ```
 
-In this repository, `npm run import -- <root> -o apps/demo/src/data/local.json` makes the
-demo show your own infrastructure instead of the example. `local.json` and
-`infra3d.config.json` are gitignored.
+## Packages
+
+| Package | |
+| --- | --- |
+| [`infra3d`](packages/infra3d) | The scene component, plus `infra3d/core` with the data model, validation, layout and health analysis (no React needed) |
+| [`infra3d-import-compose`](packages/import-compose) | CLI and API that build a topology from Docker Compose files, plain directories or an Ansible inventory |
+| [`apps/demo`](apps/demo) | The live demo |
+
+## Development
+
+```bash
+npm install
+npm run dev     # demo with the example topology
+npm test
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the architecture and how to add an importer.
 
 ## License
 
-MIT
+[MIT](LICENSE)

@@ -1,0 +1,14 @@
+name: Feature or importer request
+description: A new capability, a new data source or a change to the topology format
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What do you want to see or do?
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Ideas for how it could work
