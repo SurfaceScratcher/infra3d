@@ -1,5 +1,11 @@
 # infra3d
 
+## 0.4.1
+
+### Patch Changes
+
+- b636344: Fix a missing layer label with `@react-three/fiber` 9.8 and later. The HTML labels are now attached to the scene's own container instead of the canvas event source, which fiber connects only after the labels have mounted. This also removes the "synchronously unmount a root" warning in development.
+
 ## 0.4.0
 
 ### Minor Changes
