@@ -1,4 +1,4 @@
-import { useEffect, useImperativeHandle, useMemo, useRef, useState, type CSSProperties, type RefObject, type Ref } from 'react';
+import { createContext, useContext, useEffect, useImperativeHandle, useMemo, useRef, useState, type ComponentProps, type CSSProperties, type RefObject, type Ref } from 'react';
 import { Canvas, useFrame, type ThreeEvent } from '@react-three/fiber';
 import { CameraControls, Html, QuadraticBezierLine } from '@react-three/drei';
 import { computeLayout, type LayoutOptions, type Vec3 } from './layout.js';
@@ -75,55 +75,70 @@ export function InfraScene({
 
   return (
     <div ref={container} className={className} style={{ position: 'relative', width: '100%', height: '100%', ...style }}>
-      <Canvas camera={{ position: fit.position, fov: FOV, near: 0.5, far: Math.max(1000, fit.distance * 10) }} onPointerMissed={() => onSelect?.(null)}>
-        <color attach="background" args={[theme.background]} />
-        {/* Fog fades what lies behind the overview, so it scales with the fitted distance */}
-        <fog attach="fog" args={[theme.background, fit.distance * 1.25, fit.distance * 2.7]} />
-        <ambientLight intensity={0.55} />
-        <directionalLight position={[40, 80, 40]} intensity={1.1} />
+      <LabelTarget.Provider value={container}>
+        <Canvas camera={{ position: fit.position, fov: FOV, near: 0.5, far: Math.max(1000, fit.distance * 10) }} onPointerMissed={() => onSelect?.(null)}>
+          <color attach="background" args={[theme.background]} />
+          {/* Fog fades what lies behind the overview, so it scales with the fitted distance */}
+          <fog attach="fog" args={[theme.background, fit.distance * 1.25, fit.distance * 2.7]} />
+          <ambientLight intensity={0.55} />
+          <directionalLight position={[40, 80, 40]} intensity={1.1} />
 
-        <CameraRig selectedPos={selectedId ? layout.positions.get(selectedId) : undefined} fit={fit} fitAll={fitAll} />
+          <CameraRig selectedPos={selectedId ? layout.positions.get(selectedId) : undefined} fit={fit} fitAll={fitAll} />
 
-        {topology.layers.map((l) =>
-          hidden.has(l.id) ? null : (
-            <LayerPlane key={l.id} theme={theme} label={l.label} y={layout.layerY.get(l.id)!} bounds={bounds} columns={l.id === 'container' ? layout.columns : []} />
-          ),
-        )}
+          {topology.layers.map((l) =>
+            hidden.has(l.id) ? null : (
+              <LayerPlane key={l.id} theme={theme} label={l.label} y={layout.layerY.get(l.id)!} bounds={bounds} columns={l.id === 'container' ? layout.columns : []} />
+            ),
+          )}
 
-        {topology.edges.map((e, i) => {
-          const a = nodeById.get(e.from);
-          const b = nodeById.get(e.to);
-          if (!visible(a) || !visible(b)) return null;
-          const faulty = !!status && isFaulty(status[e.from]) && isFaulty(status[e.to]);
-          return <EdgeLine key={i} theme={theme} edge={e} index={i} from={layout.positions.get(e.from)!} to={layout.positions.get(e.to)!} highlight={highlight} faulty={faulty} />;
-        })}
+          {topology.edges.map((e, i) => {
+            const a = nodeById.get(e.from);
+            const b = nodeById.get(e.to);
+            if (!visible(a) || !visible(b)) return null;
+            const faulty = !!status && isFaulty(status[e.from]) && isFaulty(status[e.to]);
+            return <EdgeLine key={i} theme={theme} edge={e} index={i} from={layout.positions.get(e.from)!} to={layout.positions.get(e.to)!} highlight={highlight} faulty={faulty} />;
+          })}
 
-        {topology.nodes.map((n) =>
-          visible(n) ? (
-            <NodeMesh
-              key={n.id}
-              node={n}
-              theme={theme}
-              position={layout.positions.get(n.id)!}
-              selected={n.id === selectedId}
-              hovered={n.id === hovered}
-              state={nodeState(n.id, highlight)}
-              health={status?.[n.id]}
-              showLabel={
-                showAllLabels ||
-                n.id === hovered ||
-                !['container', 'endpoint'].includes(n.type) ||
-                isFaulty(status?.[n.id]) ||
-                (!!highlight && nodeState(n.id, highlight) !== 'dim')
-              }
-              onHover={setHovered}
-              onSelect={(id) => onSelect?.(id)}
-            />
-          ) : null,
-        )}
-      </Canvas>
+          {topology.nodes.map((n) =>
+            visible(n) ? (
+              <NodeMesh
+                key={n.id}
+                node={n}
+                theme={theme}
+                position={layout.positions.get(n.id)!}
+                selected={n.id === selectedId}
+                hovered={n.id === hovered}
+                state={nodeState(n.id, highlight)}
+                health={status?.[n.id]}
+                showLabel={
+                  showAllLabels ||
+                  n.id === hovered ||
+                  !['container', 'endpoint'].includes(n.type) ||
+                  isFaulty(status?.[n.id]) ||
+                  (!!highlight && nodeState(n.id, highlight) !== 'dim')
+                }
+                onHover={setHovered}
+                onSelect={(id) => onSelect?.(id)}
+              />
+            ) : null,
+          )}
+        </Canvas>
+      </LabelTarget.Provider>
     </div>
   );
+}
+
+/**
+ * Element the HTML labels are attached to. Without a fixed target, drei's <Html> uses the
+ * event source, which @react-three/fiber >= 9.8 connects only after the labels have mounted.
+ * The label then rebuilds its React root on the same element while the old root's unmount
+ * is still deferred, and that late unmount empties the new label.
+ */
+const LabelTarget = createContext<RefObject<HTMLDivElement | null> | undefined>(undefined);
+
+function Label(props: ComponentProps<typeof Html>) {
+  const target = useContext(LabelTarget);
+  return <Html portal={target as RefObject<HTMLElement> | undefined} {...props} />;
 }
 
 type NodeState = 'normal' | 'down' | 'up' | 'self' | 'dim';
@@ -204,18 +219,18 @@ function LayerPlane({ theme, label, y, bounds, columns }: { theme: InfraTheme; l
         <meshBasicMaterial color={theme.plane} transparent opacity={0.28} depthWrite={false} />
       </mesh>
       <PlaneOutline color={theme.planeOutline} cx={cx} cz={cz} w={w} d={d} />
-      <Html position={[bounds.minX - pad, 0, bounds.maxZ + pad]} style={{ pointerEvents: 'none' }}>
+      <Label position={[bounds.minX - pad, 0, bounds.maxZ + pad]} style={{ pointerEvents: 'none' }}>
         <div style={{ ...layerLabelStyle, color: theme.layerLabel, fontFamily: theme.fontFamily }}>{label}</div>
-      </Html>
+      </Label>
       {columns.map((c) => (
         <group key={c.id}>
           <mesh position={[c.x, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
             <planeGeometry args={[c.width + 3, c.depth + 3]} />
             <meshBasicMaterial color={theme.column} transparent opacity={0.35} depthWrite={false} />
           </mesh>
-          <Html position={[c.x, 0, -c.depth / 2 - 2.5]} center style={{ pointerEvents: 'none' }}>
+          <Label position={[c.x, 0, -c.depth / 2 - 2.5]} center style={{ pointerEvents: 'none' }}>
             <div style={{ ...columnLabelStyle, color: theme.columnLabel, fontFamily: theme.fontFamily }}>{c.id}</div>
-          </Html>
+          </Label>
         </group>
       ))}
     </group>
@@ -308,11 +323,11 @@ function NodeMesh({
       )}
       {alarm && <AlarmRing color={alarm} pulse={health === 'down'} />}
       {showLabel && (
-        <Html position={[0, node.type === 'host' ? 1.6 : 1.2, 0]} center distanceFactor={32} style={{ pointerEvents: 'none' }} zIndexRange={[10, 0]}>
+        <Label position={[0, node.type === 'host' ? 1.6 : 1.2, 0]} center distanceFactor={32} style={{ pointerEvents: 'none' }} zIndexRange={[10, 0]}>
           <div style={{ ...nodeLabelStyle, color: theme.labelText, background: theme.labelBackground, fontFamily: theme.fontFamily, opacity: dim ? 0.25 : 1, borderColor: selected ? '#fff' : alarm ?? ring ?? 'transparent', fontWeight: node.type === 'host' || selected ? 600 : 400 }}>
             {node.label}
           </div>
-        </Html>
+        </Label>
       )}
     </group>
   );
