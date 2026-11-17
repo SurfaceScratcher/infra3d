@@ -14,3 +14,7 @@ export { analyzeHealth, dependencyClosure, checkTarget, STRUCTURAL_KINDS } from 
 export type { CheckResult, HealthOptions, HealthAnalysis, Cause } from './health.js';
 export { DEFAULT_THEME, resolveTheme, NODE_COLORS, EDGE_COLORS, DOWN_COLOR, UP_COLOR, STATUS_COLORS } from './theme.js';
 export type { InfraTheme } from './theme.js';
+export { computeDiagramLayout, shortenLabel, DIAGRAM_NODE_RADIUS, DIAGRAM_LABEL_CHARS } from './layout2d.js';
+export type { DiagramView, DiagramLayoutOptions, DiagramLayout, DiagramBox, DiagramPoint } from './layout2d.js';
+export { toDrawio, DRAWIO_THEME } from './drawio.js';
+export type { DrawioOptions } from './drawio.js';
