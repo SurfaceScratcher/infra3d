@@ -13,6 +13,8 @@ rotate, zoom and click through.
   service itself.
 - **Dependencies and impact:** select a node to highlight what it **needs** (blue) and what
   **fails with it** (red).
+- **2D views and wiki export:** switch to a flat diagram per layer or per host, download it as an
+  editable draw.io file or embed a live, always current picture in XWiki, Confluence or any wiki.
 - **Notifications** via ntfy or a webhook when something goes down or recovers.
 - Runs as a **Docker container** (amd64 and arm64), or embed the **React component** in your own app.
 
@@ -47,6 +49,30 @@ All options are in [apps/app](apps/app#configuration). The UI shows your whole i
 keep it on your LAN or protect it with `INFRA3D_AUTH` or your reverse proxy's login, see
 [Security](apps/app#security). Read-only, no telemetry, no Docker socket needed.
 
+## 2D views
+
+Next to the 3D scene, the app shows two flat diagrams of the same topology with the same selection,
+highlighting and live status. **Hosts** puts each host on a card with its compose stacks as boxes:
+
+![Hosts view of the demo: homelab is offline, its four endpoints are marked red and the containers, networks and hardware that could explain it orange](docs/2d-hosts.png)
+
+**Layers** keeps one band per layer and one column per host, so everything that belongs to a host
+lines up underneath it. Here the homelab host is selected: red is what fails with it, blue what it needs.
+
+![Layers view of the demo with the homelab host selected](docs/2d-layers.png)
+
+For documentation, the **draw.io** button downloads both views as an editable draw.io file for the
+draw.io macro in XWiki or Confluence. To keep a wiki page up to date instead, embed the live image
+the app serves at `/api/diagram.svg`. It has a light theme for white pages and shows the current status:
+
+![Light hosts diagram as served by /api/diagram.svg for a wiki page, with the homelab outage marked](docs/wiki-hosts.png)
+
+```
+[[image:https://infra3d.example.com/api/diagram.svg?view=hosts&token=<INFRA3D_EMBED_TOKEN>]]
+```
+
+See [embedding the diagram in a wiki](apps/app#embedding-the-diagram-in-a-wiki) for the token and the options.
+
 ## React component
 
 ```bash
@@ -67,6 +93,9 @@ export function Infra() {
   );
 }
 ```
+
+For the 2D views without three.js, use `InfraDiagram` from `infra3d/diagram`
+(`<InfraDiagram view="hosts" topology={topology} />`), see the [library docs](packages/infra3d#infradiagram-2d-views).
 
 Generate `topology.json` from your compose stacks:
 
