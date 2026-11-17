@@ -1,5 +1,13 @@
 # infra3d-import-ci
 
+## 0.1.1
+
+### Patch Changes
+
+- ecbc5fa: 3D layout: a profile can set `anchorGroups: 'columns'` to place the groups of its anchor layer side by side instead of one behind the other (also as `layout.anchorGroups`). The CI profile uses it, so the workflows of a pipeline line up from left to right above their steps instead of hiding behind each other, and its column labels sit in front. Workflows no longer drift towards the workflows they need.
+- Updated dependencies [ecbc5fa]
+  - infra3d@0.8.0
+
 ## 0.1.0
 
 ### Minor Changes

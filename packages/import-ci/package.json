@@ -1,6 +1,6 @@
 {
   "name": "infra3d-import-ci",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Builds a layered infra3d topology of CI pipelines, workflows and steps from Woodpecker or Drone, with their dependencies and state.",
   "license": "MIT",
   "repository": {
@@ -31,7 +31,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "infra3d": "^0.7.0"
+    "infra3d": "^0.8.0"
   },
   "devDependencies": {
     "@types/node": "^22.20.5"
