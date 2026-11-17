@@ -211,8 +211,7 @@ the SVG and draw.io each draw them their own way. `roles` override the shape by 
 theme overrides it (`resolveTheme(theme, profile)`).
 
 **A topology can carry its profile** in `topology.profile`, so the data explains itself: every
-function and component then uses it without being told, and apps such as the infra3d app open
-files of any domain. `resolveProfile(topology)` returns the profile in effect (the carried one, a
+function and component then uses it without being told. `resolveProfile(topology)` returns the profile in effect (the carried one, a
 built-in one by name, else `INFRA_PROFILE`); `validateTopology` checks carried profiles too, and
 `reportedStatus(topology)` collects the `status` the nodes carry, which the components and exports
 also use when no `status` is passed.

@@ -36,8 +36,9 @@ npx infra3d-import-ci --from snapshot.json -f json -o topology.json
 | `--dark` | dark colours, for SVG |
 | `--from <file>` | build from a snapshot instead of the API |
 
-The JSON topology carries the CI profile and each node's status, so the [infra3d app](../../apps/app)
-and the live demo show it with *Open…* (or drag and drop) without further setup, in 3D or 2D.
+The JSON topology carries the CI profile and each node's status, so `<InfraScene>`,
+`<InfraDiagram>`, `toSvg` and `toDrawio` from [infra3d](../infra3d) show it without further options.
+The infra3d app itself stays on infrastructure; build your own page for CI data.
 
 Keep the token in the environment, not on the command line. The output contains repository
 names, branches, commit messages and authors, so treat it like the CI itself.
