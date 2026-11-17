@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { analyzeHealth, computeDiagramLayout, computeHighlight, computeLayout, edgeLabel, INFRA_PROFILE, shapeOf, STRUCTURAL_KINDS, toDrawio, toSvg, traverse, typeLabel, type DomainProfile, type Topology } from '../src/core.js';
+import { analyzeHealth, computeDiagramLayout, computeHighlight, computeLayout, DEFAULT_THEME, edgeLabel, INFRA_PROFILE, profileColors, reportedStatus, resolveProfile, resolveTheme, shapeOf, STRUCTURAL_KINDS, toDrawio, toSvg, traverse, typeLabel, validateTopology, type DomainProfile, type Topology } from '../src/core.js';
 
 // A second domain: CI pipelines. A failing step blocks its workflow, which blocks the pipeline;
 // a notification step that fails does not.
@@ -111,5 +111,68 @@ describe('a custom profile', () => {
     // `contains` within one card is implied on the hosts page
     const hosts = xml.slice(xml.indexOf('name="Hosts"'));
     expect((hosts.match(/edge="1"/g) ?? []).length).toBe(ci.edges.filter((e) => e.kind !== 'contains').length);
+  });
+});
+
+describe('a topology that carries its profile', () => {
+  const coloured: DomainProfile = {
+    ...CI,
+    nodeTypes: { ...CI.nodeTypes, step: { ...CI.nodeTypes.step, color: '#123456' } },
+    edgeKinds: { ...CI.edgeKinds, needs: { ...CI.edgeKinds.needs, color: '#654321' } },
+  };
+  const own: Topology = {
+    ...ci,
+    profile: coloured,
+    nodes: ci.nodes.map((n) => (n.id === 's:compile' ? { ...n, status: 'down' as const } : n)),
+  };
+
+  it('resolves the profile from the topology, by name or inline', () => {
+    expect(resolveProfile(own)).toBe(coloured);
+    expect(resolveProfile({ profile: 'infra' })).toBe(INFRA_PROFILE);
+    expect(resolveProfile({})).toBe(INFRA_PROFILE);
+    expect(resolveProfile({ profile: 'unknown' })).toBe(INFRA_PROFILE);
+    expect(resolveProfile({ profile: 'ci' }, { ci: CI })).toBe(CI);
+  });
+
+  it('is used by every function without passing it', () => {
+    expect(traverse(own, 's:chat', 'up').nodes.has('p')).toBe(false);
+    expect(computeDiagramLayout(own, { view: 'hosts' }).groups.map((g) => g.label).sort()).toEqual(['build', 'deploy', 'test']);
+    const svg = toSvg(own, { view: 'layers' });
+    expect(svg).toContain('<polygon points="0,-10 10,0 0,10 -10,0" fill="#123456"');
+    expect(svg).toContain('stroke="#654321"');
+    // The reported status shows without a status option
+    expect(svg).toContain('(step, down)');
+    expect(toDrawio(own)).toMatch(/id="layers:node:s:compile"[^>]*>\s*<mxCell style="[^"]*strokeWidth=3/);
+  });
+
+  it('lets the theme override the colours of the profile', () => {
+    const t = resolveTheme({ nodeColors: { step: '#ffffff' } }, coloured);
+    expect(t.nodeColors.step).toBe('#ffffff');
+    expect(t.edgeColors.needs).toBe('#654321');
+    expect(t.nodeColors.host).toBe(DEFAULT_THEME.nodeColors.host);
+    expect(profileColors(INFRA_PROFILE)).toEqual({ nodeColors: {}, edgeColors: {} });
+  });
+
+  it('reports the status the nodes carry', () => {
+    expect(reportedStatus(ci)).toBeUndefined();
+    expect(reportedStatus(own)).toMatchObject({ 's:compile': 'down', p: 'unknown' });
+  });
+
+  it('is validated', () => {
+    expect(validateTopology(own)).toMatchObject({ valid: true, warnings: [] });
+    expect(validateTopology({ ...ci, profile: 'infra' }).valid).toBe(true);
+    expect(validateTopology({ ...ci, profile: 'nope' }).warnings[0]).toContain('profile "nope" is not built in');
+    const bad = validateTopology({
+      ...ci,
+      profile: { ...CI, anchorLayer: 'nowhere', nodeTypes: { step: { shape: 'star' } }, edgeKinds: { needs: { line: 'dotted', label: ['only one'] } } },
+      nodes: [{ ...ci.nodes[0], status: 'broken' }, ...ci.nodes.slice(1)],
+    });
+    expect(bad.errors).toEqual([
+      'profile node type "step": unknown shape "star", expected one of box, wide, slab, hexagon, ring, diamond, cylinder',
+      'profile edge kind "needs": "line" must be "solid" or "dashed"',
+      'profile edge kind "needs": "label" must be [outgoing, incoming]',
+      'nodes[0] "p": "status" must be one of ok, down, suspect, unknown',
+    ]);
+    expect(bad.warnings).toContain('profile: anchorLayer "nowhere" is not a layer of this topology');
   });
 });

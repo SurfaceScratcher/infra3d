@@ -1,5 +1,5 @@
 import type { LayoutOptions } from './layout.js';
-import { INFRA_PROFILE } from './infra-profile.js';
+import { resolveProfile } from './profile.js';
 import type { InfraLayer, InfraNode, Topology } from './types.js';
 
 /**
@@ -80,7 +80,7 @@ export function computeDiagramLayout(topo: Topology, opts: DiagramLayoutOptions 
 }
 
 function layersView(topo: Topology, layers: InfraLayer[], nodes: InfraNode[], opts: DiagramLayoutOptions): DiagramLayout {
-  const anchorLayer = opts.layout?.anchorLayer ?? (opts.layout?.profile ?? INFRA_PROFILE).anchorLayer;
+  const anchorLayer = opts.layout?.anchorLayer ?? (opts.layout?.profile ?? resolveProfile(topo)).anchorLayer;
   const perRowMax = Math.max(1, opts.perRow ?? 5);
   const COLUMN_CAPTION = 24, BAND_CAPTION = 22, BAND_PAD = 6, BAND_GAP = 8, COLUMN_GAP = 14, INSET = 10;
 
@@ -162,7 +162,7 @@ function columnsOf(topo: Topology, nodes: InfraNode[]) {
 }
 
 function hostsView(topo: Topology, layers: InfraLayer[], nodes: InfraNode[], opts: DiagramLayoutOptions): DiagramLayout {
-  const anchorLayer = opts.layout?.anchorLayer ?? (opts.layout?.profile ?? INFRA_PROFILE).anchorLayer;
+  const anchorLayer = opts.layout?.anchorLayer ?? (opts.layout?.profile ?? resolveProfile(topo)).anchorLayer;
   const perRow = Math.max(1, opts.perRow ?? 4);
   const CARD_TITLE = 30, CARD_PAD = 14, CARD_GAP = 20, SECTION_CAPTION = 18, SECTION_GAP = 8, GROUP_CAPTION = 18, GROUP_GAP = 8;
 

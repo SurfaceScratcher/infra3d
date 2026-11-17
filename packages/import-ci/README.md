@@ -36,6 +36,10 @@ npx infra3d-import-ci --from snapshot.json -f json -o topology.json
 | `--dark` | dark colours, for SVG |
 | `--from <file>` | build from a snapshot instead of the API |
 
+The JSON topology carries the CI profile and each node's status, so `<InfraScene>`,
+`<InfraDiagram>`, `toSvg` and `toDrawio` from [infra3d](../infra3d) show it without further options.
+The infra3d app itself stays on infrastructure; build your own page for CI data.
+
 Keep the token in the environment, not on the command line. The output contains repository
 names, branches, commit messages and authors, so treat it like the CI itself.
 
@@ -65,13 +69,14 @@ Each source translates its API into one neutral model (`CiSnapshot`); the graph 
 that alone, so another CI only needs another source.
 
 ```ts
-import { drone, buildTopology, statusOf, CI_PROFILE, CI_COLORS } from 'infra3d-import-ci';
+import { drone, buildTopology } from 'infra3d-import-ci';
 import { InfraDiagram } from 'infra3d';
 
 const snapshot = await drone.fetchSnapshot({ server, token, repos: ['acme/shop'], pipelines: 3 });
 const topology = buildTopology(snapshot);
 
-<InfraDiagram topology={topology} profile={CI_PROFILE} status={statusOf(topology)} theme={CI_COLORS} view="hosts" />
+// The topology carries CI_PROFILE and each node its status, so nothing else is needed
+<InfraDiagram topology={topology} view="hosts" />
 ```
 
 `fromWoodpecker` and `fromDrone` translate single API responses, e.g. from a webhook.

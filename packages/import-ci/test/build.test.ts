@@ -18,6 +18,12 @@ describe('buildTopology', () => {
     expect(topo.layers.map((l) => l.id)).toEqual(['step', 'workflow', 'pipeline']);
   });
 
+  it('carries its profile and each node its status, so infra3d needs no options', () => {
+    expect(topo.profile).toBe(CI_PROFILE);
+    expect(topo.nodes.find((n) => n.id === T(5))!.status).toBe('down');
+    expect(toSvg(topo, { view: 'hosts' })).toBe(toSvg(topo, { view: 'hosts', profile: CI_PROFILE, status: statusOf(topo) }));
+  });
+
   it('nests pipelines, workflows and steps, grouping steps by workflow', () => {
     expect(edge(`p:${P}`, `w:${P}/test`)).toBe('contains');
     expect(edge(`w:${P}/test`, T(5))).toBe('runs');

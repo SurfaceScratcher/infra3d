@@ -11,7 +11,7 @@ export type { CameraAngle, CameraFit, FitOptions, Box } from './camera.js';
 export { traverse, computeHighlight, neighbors } from './graph.js';
 export type { Reach, Highlight } from './graph.js';
 export { INFRA_PROFILE } from './infra-profile.js';
-export { shapeOf, nodeTypeSpec, edgeKindSpec, propagates, structuralKinds, proxyKinds, edgeLabel, typeLabel } from './profile.js';
+export { shapeOf, nodeTypeSpec, edgeKindSpec, propagates, structuralKinds, proxyKinds, edgeLabel, typeLabel, resolveProfile, profileColors, reportedStatus, BUILTIN_PROFILES, NODE_SHAPES } from './profile.js';
 export type { DomainProfile, NodeTypeSpec, EdgeKindSpec, NodeShape } from './profile.js';
 export { analyzeHealth, dependencyClosure, checkTarget, STRUCTURAL_KINDS } from './health.js';
 export type { CheckResult, HealthOptions, HealthAnalysis, Cause } from './health.js';

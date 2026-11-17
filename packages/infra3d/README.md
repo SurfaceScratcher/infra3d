@@ -133,7 +133,10 @@ The layout behind both is `computeDiagramLayout(topology, { view })`, a pure fun
   their own shapes and colours. Any other string works and gets a default look.
 - Optional node fields: `column` (layout column, usually the host), `group` (row within the
   column, usually the stack), `role` (`"database"` draws a cylinder), `check` (health check
-  target), `offset` (`[x, z]` nudge), `meta` (shown by your UI).
+  target), `status` (`ok`, `down`, `suspect` or `unknown` as reported by the source, e.g. a failed
+  CI step; live checks take precedence), `offset` (`[x, z]` nudge), `meta` (shown by your UI).
+- Optional `profile`: the domain of the data, as the name of a built-in profile (`"infra"`, the
+  default) or a whole profile object, see [Domain profiles](#domain-profiles).
 
 The JSON schema ships as `infra3d/topology.schema.json`. `validateTopology()` also checks
 cross-references the schema cannot express:
@@ -204,13 +207,23 @@ const CI: DomainProfile = {
 
 Shapes are abstract (`box`, `wide`, `slab`, `hexagon`, `ring`, `diamond`, `cylinder`); the 3D scene,
 the SVG and draw.io each draw them their own way. `roles` override the shape by `node.role`, as
-`database` → `cylinder` does for infrastructure. Colours stay in the theme, keyed by node type and
-edge kind. `typeLabel(profile, type)` and `edgeLabel(profile, kind, 'out' | 'in')` give the wording
+`database` → `cylinder` does for infrastructure. Node types and edge kinds can bring a `color`; the
+theme overrides it (`resolveTheme(theme, profile)`).
+
+**A topology can carry its profile** in `topology.profile`, so the data explains itself: every
+function and component then uses it without being told. `resolveProfile(topology)` returns the profile in effect (the carried one, a
+built-in one by name, else `INFRA_PROFILE`); `validateTopology` checks carried profiles too, and
+`reportedStatus(topology)` collects the `status` the nodes carry, which the components and exports
+also use when no `status` is passed.
+
+```json
+{ "name": "CI", "profile": { "id": "ci", "label": "CI pipelines", "anchorLayer": "step", "nodeTypes": { … }, "edgeKinds": { … } }, "layers": [ … ], … }
+``` `typeLabel(profile, type)` and `edgeLabel(profile, kind, 'out' | 'in')` give the wording
 for legends and detail panels.
 
 ## Other exports
 
-`INFRA_PROFILE` and the profile helpers (`shapeOf`, `typeLabel`, `edgeLabel`, `structuralKinds`, `proxyKinds`, …), `computeLayout`, `fitCamera` / `sceneBox` (the overview camera as a pure function), `traverse`, `computeHighlight`, `neighbors`, `dependencyClosure`,
+`INFRA_PROFILE`, `BUILTIN_PROFILES` and the profile helpers (`resolveProfile`, `reportedStatus`, `profileColors`, `shapeOf`, `typeLabel`, `edgeLabel`, `structuralKinds`, `proxyKinds`, …), `computeLayout`, `fitCamera` / `sceneBox` (the overview camera as a pure function), `traverse`, `computeHighlight`, `neighbors`, `dependencyClosure`,
 `DEFAULT_THEME`, `resolveTheme`, and the colour constants `NODE_COLORS`, `EDGE_COLORS`,
 `STATUS_COLORS`, `DOWN_COLOR`, `UP_COLOR` for building legends, and `computeDiagramLayout`,
 `toDrawio`, `toSvg` and `DRAWIO_THEME` for the 2D views. Everything except the two components is also

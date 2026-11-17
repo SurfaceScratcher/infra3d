@@ -3,7 +3,6 @@ import fs from 'node:fs';
 import { parseArgs } from 'node:util';
 import { DEFAULT_THEME, toDrawio, toSvg, validateTopology, type DiagramView } from 'infra3d/core';
 import { buildTopology, statusOf } from './build.js';
-import { CI_COLORS, CI_PROFILE } from './profile.js';
 import { detectSource, SOURCES } from './sources/index.js';
 import type { CiSnapshot } from './types.js';
 
@@ -80,9 +79,9 @@ async function main() {
     const { errors } = validateTopology(topology);
     if (errors.length) fail(`invalid topology:\n  ${errors.join('\n  ')}`);
     const status = statusOf(topology);
-    const opts = { profile: CI_PROFILE, status };
-    if (format === 'svg') output = toSvg(topology, { ...opts, view, theme: values.dark ? { ...DEFAULT_THEME, ...CI_COLORS } : CI_COLORS });
-    else if (format === 'drawio') output = toDrawio(topology, { ...opts, theme: CI_COLORS, pageNames: { hosts: 'Repositories' } });
+    // The topology carries its profile and status, so the exports need no options for them
+    if (format === 'svg') output = toSvg(topology, { view, theme: values.dark ? DEFAULT_THEME : undefined });
+    else if (format === 'drawio') output = toDrawio(topology, { pageNames: { hosts: 'Repositories' } });
     else output = JSON.stringify(topology, null, 2) + '\n';
     const down = Object.values(status).filter((s) => s === 'down').length;
     process.stderr.write(`${topology.columns?.length ?? 0} repositories with pipelines, ${topology.nodes.length} nodes, ${topology.edges.length} edges, ${down} failed\n`);
