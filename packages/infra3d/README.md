@@ -63,6 +63,8 @@ const scene = useRef<InfraSceneHandle>(null);
 
 The same topology as a flat SVG diagram, in two views:
 
+![Hosts view: one card per host with its compose stacks as boxes, a failed host's endpoints marked red](https://raw.githubusercontent.com/SurfaceScratcher/infra3d/main/docs/2d-hosts.png)
+
 - `view="layers"`: one band per layer (endpoints, containers, networks, hardware) and one strip per
   host, so everything that belongs to a host lines up underneath it.
 - `view="hosts"`: one card per host with its endpoints, its compose stacks as boxes, its networks
@@ -101,7 +103,9 @@ To embed the diagram in XWiki, insert the draw.io (Diagram) macro on a page and 
 in its editor (*File → Import from → Device*). Confluence's draw.io macro works the same way.
 
 For a picture instead, `toSvg(topology, { view, status })` renders one view as a standalone SVG
-without a browser, e.g. on a server. The infra3d app serves it live at `/api/diagram.svg`.
+without a browser, e.g. on a server. The infra3d app serves it live at `/api/diagram.svg`:
+
+![Light hosts diagram rendered by toSvg, with an outage marked](https://raw.githubusercontent.com/SurfaceScratcher/infra3d/main/docs/wiki-hosts.png)
 
 The layout behind both is `computeDiagramLayout(topology, { view })`, a pure function.
 

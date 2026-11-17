@@ -101,13 +101,13 @@ export function InfraDiagram({
     if (!userMoved.current) fitAll(false);
   }, [size.w, size.h, layout]);
 
-  // Bring the selected node into view if it is outside or very small
+  // Bring the selected node into view if it is outside; the overview stays as it is
   useEffect(() => {
     const p = selectedId ? layout.positions.get(selectedId) : undefined;
     if (!p || !size.w) return;
     const { k, x, y } = vpRef.current;
-    const sx = p.x * k + x, sy = p.y * k + y, margin = 60;
-    if (sx > margin && sx < size.w - margin && sy > margin && sy < size.h - margin && k >= 0.6) return;
+    const sx = p.x * k + x, sy = p.y * k + y, margin = 40;
+    if (sx > margin && sx < size.w - margin && sy > margin && sy < size.h - margin) return;
     const nk = Math.max(k, 0.9);
     animateTo({ k: nk, x: size.w / 2 - p.x * nk, y: size.h / 2 - p.y * nk }, true);
   }, [selectedId, layout]);

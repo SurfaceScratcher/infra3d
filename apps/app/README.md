@@ -9,6 +9,9 @@ docker run -d -p 8080:8080 -v ./stacks:/stacks:ro ghcr.io/surfacescratcher/infra
 
 A complete compose file is in [examples/docker-compose.yml](../../examples/docker-compose.yml).
 
+The UI switches between the 3D scene and two 2D diagrams (*Layers*, *Hosts*); *draw.io* and
+*SVG* download the diagram for documentation, see [2D views](../../README.md#2d-views).
+
 ## How it works
 
 1. Every interval the server reads the topology: it imports the compose files below `/stacks`
@@ -80,6 +83,8 @@ or put it behind the authentication of your reverse proxy (Authelia, Authentik, 
 - `GET /healthz`: liveness
 
 ### Embedding the diagram in a wiki
+
+![Light hosts diagram as served by /api/diagram.svg, with an outage marked](../../docs/wiki-hosts.png)
 
 The SVG endpoint always shows the current state, so a wiki page that embeds it stays up to date.
 The image is loaded by each reader's browser, so it needs the readers to reach infra3d and pass
