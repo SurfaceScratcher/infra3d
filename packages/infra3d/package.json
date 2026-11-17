@@ -21,7 +21,9 @@
     "network",
     "docker",
     "visualization",
-    "3d"
+    "3d",
+    "diagram",
+    "drawio"
   ],
   "exports": {
     ".": {
@@ -31,6 +33,10 @@
     "./core": {
       "types": "./dist/core.d.ts",
       "import": "./dist/core.js"
+    },
+    "./diagram": {
+      "types": "./dist/diagram.d.ts",
+      "import": "./dist/diagram.js"
     },
     "./topology.schema.json": "./topology.schema.json"
   },

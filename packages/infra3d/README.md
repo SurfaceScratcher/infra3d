@@ -1,7 +1,8 @@
 # infra3d
 
 React component that shows IT infrastructure as stacked 3D layers
-(hardware → networks → containers → endpoints) you can rotate, zoom and click through.
+(hardware → networks → containers → endpoints) you can rotate, zoom and click through,
+plus two 2D diagrams of the same topology that export to draw.io.
 
 ![infra3d demo: a host goes offline, four endpoints fail and the dependency graph narrows 52 nodes down to four likely causes](https://raw.githubusercontent.com/SurfaceScratcher/infra3d/main/docs/screenshot.png)
 
@@ -57,6 +58,49 @@ const scene = useRef<InfraSceneHandle>(null);
 <button onClick={() => scene.current?.fitAll()}>Show all</button>
 <InfraScene ref={scene} topology={topology} />
 ```
+
+## `<InfraDiagram>`: 2D views
+
+The same topology as a flat SVG diagram, in two views:
+
+- `view="layers"`: one band per layer (endpoints, containers, networks, hardware) and one strip per
+  host, so everything that belongs to a host lines up underneath it.
+- `view="hosts"`: one card per host with its endpoints, its compose stacks as boxes, its networks
+  and its hardware. Network memberships are implied by the cards and drawn only when highlighted.
+
+```tsx
+import { InfraDiagram, type InfraDiagramHandle } from 'infra3d/diagram'; // React only, no three.js
+
+const diagram = useRef<InfraDiagramHandle>(null);
+
+<div style={{ height: 600 }}>
+  <InfraDiagram ref={diagram} view="hosts" topology={topology} selectedId={selected} onSelect={setSelected} status={health?.status} />
+</div>
+```
+
+It takes the props of `<InfraScene>` except the camera and label options, plus `view`.
+Drag to pan, scroll or pinch to zoom; nodes are buttons that Tab and Enter reach, Escape clears
+the selection, `+`, `-` and `0` zoom. `ref.current.fitAll()` shows the whole diagram and
+`ref.current.toSVG()` returns it as a standalone SVG file at its natural size.
+
+### draw.io export (XWiki, Confluence, …)
+
+```ts
+import { toDrawio } from 'infra3d/core';
+
+fs.writeFileSync('infra.drawio', toDrawio(topology, { status: health?.status }));
+```
+
+`toDrawio` writes an uncompressed draw.io file with one page per view. Bands, host cards and
+stacks are containers and every edge is attached to its nodes, so the diagram stays editable:
+move a stack and its edges follow. HTTPS endpoints link to their URL, and every node has a
+tooltip with its type, host and metadata. The colours (`DRAWIO_THEME`) suit a white wiki page;
+pass `theme` to change them, and `views`, `hiddenLayers` or `status` to choose what goes in.
+
+To embed the diagram in XWiki, insert the draw.io (Diagram) macro on a page and import the file
+in its editor (*File → Import from → Device*). Confluence's draw.io macro works the same way.
+
+The layout behind both is `computeDiagramLayout(topology, { view })`, a pure function.
 
 ## Topology format
 
@@ -121,8 +165,10 @@ which usually means the container is gone. Count it as a failure with `answered:
 
 `computeLayout`, `fitCamera` / `sceneBox` (the overview camera as a pure function), `traverse`, `computeHighlight`, `neighbors`, `dependencyClosure`,
 `DEFAULT_THEME`, `resolveTheme`, and the colour constants `NODE_COLORS`, `EDGE_COLORS`,
-`STATUS_COLORS`, `DOWN_COLOR`, `UP_COLOR` for building legends. Everything except
-`InfraScene` is also available from `infra3d/core` without React or three.js.
+`STATUS_COLORS`, `DOWN_COLOR`, `UP_COLOR` for building legends, and `computeDiagramLayout`,
+`toDrawio` and `DRAWIO_THEME` for the 2D views. Everything except the two components is also
+available from `infra3d/core` without React or three.js; `infra3d/diagram` adds `InfraDiagram`
+and needs only React.
 
 ## License
 

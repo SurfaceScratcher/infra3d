@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  InfraScene, DEFAULT_THEME, NODE_COLORS, DOWN_COLOR, UP_COLOR, STATUS_COLORS,
+  InfraScene, InfraDiagram, toDrawio, DEFAULT_THEME, NODE_COLORS, DOWN_COLOR, UP_COLOR, STATUS_COLORS,
   analyzeHealth, checkTarget, computeHighlight, dependencyClosure, neighbors, validateTopology,
 } from 'infra3d';
-import type { BuiltinEdgeKind, BuiltinNodeType, CheckResult, HighlightMode, InfraEdge, InfraNode, InfraSceneHandle, NodeType, Topology } from 'infra3d';
+import type { BuiltinEdgeKind, BuiltinNodeType, CheckResult, HighlightMode, InfraDiagramHandle, InfraEdge, InfraNode, InfraSceneHandle, NodeType, Topology } from 'infra3d';
 import { clock, since, useLiveState, type LiveState } from './live';
 
 // Two modes: the static demo (GitHub Pages, `--mode demo`) and the live app served by the infra3d server.
@@ -39,6 +39,28 @@ const EDGE_LABEL: Record<BuiltinEdgeKind, [string, string]> = {
   uplink: ['connected to', 'connects'],
   backup: ['backs up to', 'backup of'],
 };
+
+type ViewKind = '3d' | 'layers' | 'hosts';
+const VIEWS: [ViewKind, string][] = [['3d', '3D'], ['layers', 'Layers'], ['hosts', 'Hosts']];
+const VIEW_KEY = 'infra3d:view';
+
+function loadView(): ViewKind {
+  try {
+    const v = localStorage.getItem(VIEW_KEY);
+    if (v === '3d' || v === 'layers' || v === 'hosts') return v;
+  } catch { /* storage blocked */ }
+  return '3d';
+}
+
+function download(name: string, type: string, content: string) {
+  const url = URL.createObjectURL(new Blob([content], { type }));
+  const a = Object.assign(document.createElement('a'), { href: url, download: name });
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/** File name from the topology name, e.g. "Homelab & Cloud" -> "homelab-cloud". */
+const fileBase = (t: Topology) => (t.name ?? 'infra3d').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'infra3d';
 
 const typeLabel = (t: NodeType) => TYPE_LABEL[t as BuiltinNodeType] ?? t;
 const edgeLabel = (e: InfraEdge, dir: 0 | 1) => EDGE_LABEL[e.kind as BuiltinEdgeKind]?.[dir] ?? e.kind;
@@ -108,7 +130,18 @@ function Explorer({ topology, live, busy, onCheckNow, initialBroken = [], intro 
   const [showAll, setShowAll] = useState(false);
   const [query, setQuery] = useState('');
   const [broken, setBroken] = useState<string[]>(initialBroken);
+  const [view, setViewState] = useState<ViewKind>(loadView);
   const scene = useRef<InfraSceneHandle>(null);
+  const diagram = useRef<InfraDiagramHandle>(null);
+  const setView = (v: ViewKind) => {
+    setViewState(v);
+    try { localStorage.setItem(VIEW_KEY, v); } catch { /* storage blocked */ }
+  };
+  const exportDrawio = () => download(`${fileBase(topology)}.drawio`, 'application/xml', toDrawio(topology, { hiddenLayers, status }));
+  const exportSvg = () => {
+    const svg = diagram.current?.toSVG();
+    if (svg) download(`${fileBase(topology)}-${view}.svg`, 'image/svg+xml', svg);
+  };
 
   const validation = useMemo(() => validateTopology(topology), [topology]);
   const nodeById = useMemo(() => new Map(topology.nodes.map((n) => [n.id, n])), [topology]);
@@ -254,7 +287,7 @@ function Explorer({ topology, live, busy, onCheckNow, initialBroken = [], intro 
               <input type="checkbox" checked={!hiddenLayers.includes(l.id)} onChange={() => toggleLayer(l.id)} /> {l.label}
             </label>
           ))}
-          <label className="check">
+          <label className="check" hidden={view !== '3d'}>
             <input type="checkbox" checked={showAll} onChange={(e) => setShowAll(e.target.checked)} /> All labels
           </label>
         </section>
@@ -308,7 +341,7 @@ function Explorer({ topology, live, busy, onCheckNow, initialBroken = [], intro 
           <section className="hint muted">
             Click a node to see what it <b>needs</b> and what is <b>affected</b> when it fails,
             or simulate a failure and watch the health analysis narrow down the cause.
-            Drag to rotate, right-drag to pan, scroll to zoom.
+            {' '}{view === '3d' ? 'Drag to rotate, right-drag to pan, scroll to zoom.' : 'Drag to pan, scroll or pinch to zoom, Tab and Enter to pick a node.'}
           </section>
         )}
 
@@ -334,8 +367,23 @@ function Explorer({ topology, live, busy, onCheckNow, initialBroken = [], intro 
       </aside>
 
       <main className="stage">
-        <button className="fit" onClick={() => { setSelected(null); scene.current?.fitAll(); }}>Show all</button>
-        <InfraScene ref={scene} topology={topology} status={status} selectedId={selected} onSelect={setSelected} mode={mode} hiddenLayers={hiddenLayers} showAllLabels={showAll} />
+        <div className="toolbar">
+          <div className="seg views" role="group" aria-label="View">
+            {VIEWS.map(([v, name]) => (
+              <button key={v} className={view === v ? 'on' : ''} aria-pressed={view === v} onClick={() => setView(v)}>{name}</button>
+            ))}
+          </div>
+          <div className="tools">
+            <button className="tool" onClick={exportDrawio} title="Both 2D diagrams as an editable draw.io file, e.g. for the draw.io macro in XWiki or Confluence">draw.io</button>
+            {view !== '3d' && <button className="tool" onClick={exportSvg} title="This diagram as an SVG image">SVG</button>}
+            <button className="tool" onClick={() => { setSelected(null); (view === '3d' ? scene : diagram).current?.fitAll(); }}>Show all</button>
+          </div>
+        </div>
+        {view === '3d' ? (
+          <InfraScene ref={scene} topology={topology} status={status} selectedId={selected} onSelect={setSelected} mode={mode} hiddenLayers={hiddenLayers} showAllLabels={showAll} />
+        ) : (
+          <InfraDiagram ref={diagram} view={view} topology={topology} status={status} selectedId={selected} onSelect={setSelected} mode={mode} hiddenLayers={hiddenLayers} />
+        )}
       </main>
     </div>
   );
