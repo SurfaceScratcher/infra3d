@@ -109,6 +109,7 @@ npx infra3d-import-compose ./stacks -o topology.json
 | --- | --- |
 | [`infra3d`](packages/infra3d) | The scene component, plus `infra3d/core` with the data model, validation, layout and health analysis (no React needed) |
 | [`infra3d-import-compose`](packages/import-compose) | CLI and API that build a topology from Docker Compose files, plain directories or an Ansible inventory |
+| [`infra3d-import-ci`](packages/import-ci) | Experimental: CI pipelines, workflows and steps from Woodpecker or Drone as a second domain (not on npm yet) |
 | [`apps/app`](apps/app) | The self-hosted app (Docker image) and the live demo |
 
 ## Development
