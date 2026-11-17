@@ -141,3 +141,25 @@ describe('toDrawio', () => {
     expect(toDrawio(topo, { views: ['hosts'] }).match(/<diagram /g)).toHaveLength(1);
   });
 });
+
+describe('toSvg', () => {
+  it('renders every node of a view as a standalone, well-formed SVG', async () => {
+    const { toSvg } = await import('../src/svg.js');
+    for (const view of ['layers', 'hosts'] as const) {
+      const svg = toSvg(topo, { view });
+      expect(svg).toMatch(/^<\?xml[^>]*>\n<svg xmlns="http:\/\/www.w3.org\/2000\/svg" width="\d+" height="\d+"/);
+      for (const n of topo.nodes) expect(svg, `${view} ${n.id}`).toContain(`<title>${n.label} (${n.type})</title>`);
+      // Every opened element is closed
+      const opened = (svg.match(/<(g|svg|text|title)[\s>]/g) ?? []).length;
+      const closed = (svg.match(/<\/(g|svg|text|title)>/g) ?? []).length;
+      expect(closed).toBe(opened);
+    }
+  });
+
+  it('marks failures and escapes labels', async () => {
+    const { toSvg } = await import('../src/svg.js');
+    const svg = toSvg({ ...topo, nodes: topo.nodes.map((n) => (n.id === 'site' ? { ...n, label: 'A & <B>' } : n)) }, { status: { 'e:shop': 'down' } });
+    expect(svg).toContain('A &amp; &lt;B&gt;');
+    expect(svg).toContain('(endpoint, down)');
+  });
+});

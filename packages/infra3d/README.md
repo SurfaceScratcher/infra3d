@@ -100,6 +100,9 @@ pass `theme` to change them, and `views`, `hiddenLayers` or `status` to choose w
 To embed the diagram in XWiki, insert the draw.io (Diagram) macro on a page and import the file
 in its editor (*File → Import from → Device*). Confluence's draw.io macro works the same way.
 
+For a picture instead, `toSvg(topology, { view, status })` renders one view as a standalone SVG
+without a browser, e.g. on a server. The infra3d app serves it live at `/api/diagram.svg`.
+
 The layout behind both is `computeDiagramLayout(topology, { view })`, a pure function.
 
 ## Topology format
@@ -166,7 +169,7 @@ which usually means the container is gone. Count it as a failure with `answered:
 `computeLayout`, `fitCamera` / `sceneBox` (the overview camera as a pure function), `traverse`, `computeHighlight`, `neighbors`, `dependencyClosure`,
 `DEFAULT_THEME`, `resolveTheme`, and the colour constants `NODE_COLORS`, `EDGE_COLORS`,
 `STATUS_COLORS`, `DOWN_COLOR`, `UP_COLOR` for building legends, and `computeDiagramLayout`,
-`toDrawio` and `DRAWIO_THEME` for the 2D views. Everything except the two components is also
+`toDrawio`, `toSvg` and `DRAWIO_THEME` for the 2D views. Everything except the two components is also
 available from `infra3d/core` without React or three.js; `infra3d/diagram` adds `InfraDiagram`
 and needs only React.
 

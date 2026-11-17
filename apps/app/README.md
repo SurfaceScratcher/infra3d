@@ -50,6 +50,7 @@ get their checks from `checks` in `infra3d.config.json`:
 | `WEBHOOK_URL` | | receives `{ event: "down" \| "up", title, message, endpoints, causes, url }` as JSON |
 | `INFRA3D_BASE_URL` | | public URL of the app, used as the click target in notifications |
 | `INFRA3D_AUTH` | | `user:password` for HTTP Basic Auth on UI and API (`/healthz` stays open) |
+| `INFRA3D_EMBED_TOKEN` | | opens only `/api/diagram.svg` and `/api/diagram.drawio` to requests with `?token=<value>`, for diagrams embedded in a wiki |
 | `PORT` | `8080` | |
 
 Self-signed certificates: set `NODE_TLS_REJECT_UNAUTHORIZED=0` to accept them.
@@ -72,7 +73,29 @@ or put it behind the authentication of your reverse proxy (Authelia, Authentik, 
 - `POST /api/check`: re-read the topology and check now
 - `GET /api/report`: the last import as an anonymized report for bug reports (also linked as
   "import report" at the bottom of the sidebar), see [import reports](../../packages/import-compose#import-reports-for-bug-reports)
+- `GET /api/diagram.svg`: the current 2D diagram with live status as an SVG image.
+  Query: `view=hosts|layers` (default `hosts`), `theme=light|dark` (default `light`),
+  `hide=network,endpoint` to leave out layers, `status=0` without health state
+- `GET /api/diagram.drawio`: both 2D views as an editable draw.io file, same `theme`, `hide` and `status`
 - `GET /healthz`: liveness
+
+### Embedding the diagram in a wiki
+
+The SVG endpoint always shows the current state, so a wiki page that embeds it stays up to date.
+The image is loaded by each reader's browser, so it needs the readers to reach infra3d and pass
+its authentication. With `INFRA3D_AUTH` set, add `INFRA3D_EMBED_TOKEN` and put the token in the URL;
+it opens the two diagram endpoints and nothing else:
+
+```
+# XWiki 2.1 syntax
+[[image:https://infra3d.example.com/api/diagram.svg?view=hosts&token=<token>]]
+```
+
+Everyone who can read the page can see the token and therefore the diagram (structure, names and
+which endpoints are down, but not the rest of the API). Use a long random value, e.g.
+`openssl rand -hex 24`, and change it if the page becomes more widely readable.
+For an editable copy instead of a live picture, download the draw.io file (button in the app or
+`/api/diagram.drawio`) and import it into the draw.io macro.
 
 ## Development
 

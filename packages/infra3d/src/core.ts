@@ -18,3 +18,5 @@ export { computeDiagramLayout, shortenLabel, DIAGRAM_NODE_RADIUS, DIAGRAM_LABEL_
 export type { DiagramView, DiagramLayoutOptions, DiagramLayout, DiagramBox, DiagramPoint } from './layout2d.js';
 export { toDrawio, DRAWIO_THEME } from './drawio.js';
 export type { DrawioOptions } from './drawio.js';
+export { toSvg } from './svg.js';
+export type { SvgOptions } from './svg.js';

@@ -6,6 +6,7 @@ import { runChecks, state } from './checks.js';
 import { config } from './config.js';
 import { notify, notifyTargets } from './notify.js';
 import { importReport, reload, source, topology } from './topology.js';
+import { DEFAULT_THEME, toDrawio, toSvg, type DiagramView, type Topology } from 'infra3d/core';
 
 // infra3d app: imports the compose stacks, probes every endpoint and serves the 3D view.
 
@@ -62,6 +63,37 @@ function authorized(req: http.IncomingMessage) {
   return given.length === expectedAuth.length && timingSafeEqual(given, expectedAuth);
 }
 
+const expectedToken = config.embedToken ? Buffer.from(config.embedToken) : null;
+const DIAGRAM_PATHS = ['/api/diagram.svg', '/api/diagram.drawio'];
+
+/** The embed token, accepted only for the diagram endpoints. */
+function embedAuthorized(url: URL) {
+  if (!expectedToken || !DIAGRAM_PATHS.includes(url.pathname)) return false;
+  const given = Buffer.from(url.searchParams.get('token') ?? '');
+  return given.length === expectedToken.length && timingSafeEqual(given, expectedToken);
+}
+
+/**
+ * The current topology with live status as an image or draw.io file. Query parameters:
+ * `view=layers|hosts` (SVG only, default hosts), `theme=light|dark` (default light),
+ * `hide=<layer>,<layer>`, `status=0` to leave out the health state.
+ */
+function diagram(url: URL, res: http.ServerResponse, topo: Topology) {
+  const q = url.searchParams;
+  const view: DiagramView = q.get('view') === 'layers' ? 'layers' : 'hosts';
+  const hiddenLayers = (q.get('hide') ?? '').split(',').map((l) => l.trim()).filter(Boolean);
+  const status = q.get('status') === '0' ? undefined : state(topo).status;
+  const theme = q.get('theme') === 'dark' ? DEFAULT_THEME : undefined;
+  const headers = { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' };
+  if (url.pathname.endsWith('.svg')) {
+    // Nothing in the image runs scripts, and the policy keeps it that way if it is opened directly
+    res.writeHead(200, { ...headers, 'Content-Type': 'image/svg+xml; charset=utf-8', 'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'" });
+    return void res.end(toSvg(topo, { view, hiddenLayers, status, theme }));
+  }
+  res.writeHead(200, { ...headers, 'Content-Type': 'application/xml; charset=utf-8', 'Content-Disposition': 'attachment; filename="infra3d.drawio"' });
+  res.end(toDrawio(topo, { hiddenLayers, status, theme }));
+}
+
 const json = (res: http.ServerResponse, body: unknown, status = 200) =>
   res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }).end(JSON.stringify(body));
 
@@ -69,7 +101,7 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url ?? '/', 'http://localhost');
   try {
     if (url.pathname === '/healthz') return json(res, { ok: true });
-    if (!authorized(req)) return void res.writeHead(401, { 'WWW-Authenticate': 'Basic realm="infra3d", charset="UTF-8"' }).end();
+    if (!authorized(req) && !embedAuthorized(url)) return void res.writeHead(401, { 'WWW-Authenticate': 'Basic realm="infra3d", charset="UTF-8"' }).end();
     if (url.pathname === '/api/state' && req.method === 'GET') return json(res, apiState());
     if (url.pathname === '/api/check' && req.method === 'POST') return (await cycle(), json(res, apiState()));
     if (url.pathname === '/api/report' && req.method === 'GET') {
@@ -77,6 +109,11 @@ const server = http.createServer(async (req, res) => {
       if (!report) return json(res, { error: 'no import report: the topology comes from INFRA3D_TOPOLOGY' }, 404);
       res.setHeader('Content-Disposition', 'attachment; filename="infra3d-import-report.json"');
       return json(res, report);
+    }
+    if (DIAGRAM_PATHS.includes(url.pathname) && (req.method === 'GET' || req.method === 'HEAD')) {
+      const topo = topology();
+      if (!topo) return json(res, { error: 'no topology yet' }, 503);
+      return diagram(url, res, topo);
     }
     if (url.pathname.startsWith('/api/')) return json(res, { error: 'not found' }, 404);
     if (req.method !== 'GET' && req.method !== 'HEAD') return void res.writeHead(405).end();

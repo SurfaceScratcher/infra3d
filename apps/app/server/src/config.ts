@@ -32,6 +32,11 @@ export const config = {
   webhookUrl: env.WEBHOOK_URL || null,
   /** `user:password` for HTTP Basic Auth on the UI and API; /healthz stays open. */
   auth: env.INFRA3D_AUTH || null,
+  /**
+   * Opens only the diagram endpoints (/api/diagram.svg, /api/diagram.drawio) to requests with
+   * `?token=<value>`, e.g. for an image embedded in a wiki page whose readers have no login here.
+   */
+  embedToken: env.INFRA3D_EMBED_TOKEN || null,
   /** Public URL of this app, used as the click target in notifications. */
   baseUrl: env.INFRA3D_BASE_URL || null,
   webDir: env.INFRA3D_WEB_DIR || new URL('../../web/dist/', import.meta.url).pathname,
