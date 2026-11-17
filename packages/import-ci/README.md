@@ -5,10 +5,11 @@ as a layered graph: pipelines on top, workflows (Drone: stages) below them, step
 with the `depends_on` links between workflows and between steps. Click a failed step to see what
 it blocked, or a red pipeline to see why it failed.
 
-> Experimental and not published to npm yet. It is the second domain next to infrastructure and
-> tests the [domain profiles](../infra3d#domain-profiles) of infra3d.
+> Experimental. It is the second domain next to infrastructure and builds on the
+> [domain profiles](https://github.com/SurfaceScratcher/infra3d/tree/main/packages/infra3d#domain-profiles) of infra3d. Tried against a real Drone server;
+> Woodpecker is covered by tests only so far.
 
-![Hosts view of two repositories](../../docs/ci-hosts.png)
+![Hosts view of two repositories](https://raw.githubusercontent.com/SurfaceScratcher/infra3d/main/docs/ci-hosts.png)
 
 ## CLI
 
@@ -37,7 +38,7 @@ npx infra3d-import-ci --from snapshot.json -f json -o topology.json
 | `--from <file>` | build from a snapshot instead of the API |
 
 The JSON topology carries the CI profile and each node's status, so `<InfraScene>`,
-`<InfraDiagram>`, `toSvg` and `toDrawio` from [infra3d](../infra3d) show it without further options.
+`<InfraDiagram>`, `toSvg` and `toDrawio` from [infra3d](https://github.com/SurfaceScratcher/infra3d/tree/main/packages/infra3d) show it without further options.
 The infra3d app itself stays on infrastructure; build your own page for CI data.
 
 Keep the token in the environment, not on the command line. The output contains repository

@@ -1,8 +1,7 @@
 {
   "name": "infra3d-import-ci",
   "version": "0.0.0",
-  "private": true,
-  "description": "Builds a layered topology of Woodpecker CI pipelines, workflows and steps, with their dependencies and state.",
+  "description": "Builds a layered infra3d topology of CI pipelines, workflows and steps from Woodpecker or Drone, with their dependencies and state.",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -12,7 +11,7 @@
   "homepage": "https://github.com/SurfaceScratcher/infra3d/tree/main/packages/import-ci#readme",
   "bugs": "https://github.com/SurfaceScratcher/infra3d/issues",
   "type": "module",
-  "keywords": ["infra3d", "woodpecker", "ci", "pipelines", "topology"],
+  "keywords": ["infra3d", "woodpecker", "drone", "ci", "pipelines", "topology"],
   "bin": {
     "infra3d-import-ci": "./dist/cli.js"
   },
