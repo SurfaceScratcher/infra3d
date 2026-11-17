@@ -1,3 +1,5 @@
+import { INFRA_PROFILE } from './infra-profile.js';
+import { proxyKinds as profileProxyKinds, structuralKinds as profileStructuralKinds, type DomainProfile } from './profile.js';
 import type { EdgeKind, InfraNode, NodeStatus, Topology } from './types.js';
 
 /**
@@ -20,13 +22,15 @@ export interface CheckResult {
 }
 
 export interface HealthOptions {
+  /** Says which edge kinds are structural and which lead to a proxy. Default INFRA_PROFILE. */
+  profile?: DomainProfile;
   /**
-   * Edge kinds that a running service actually needs at runtime. Loose couplings such as the
-   * image registry, the login service or a backup target are left out on purpose: they would
-   * clear or blame services that are not involved.
+   * Edge kinds that a running service actually needs at runtime; overrides the profile. Loose
+   * couplings such as the image registry, the login service or a backup target are left out on
+   * purpose: they would clear or blame services that are not involved.
    */
   structuralKinds?: EdgeKind[];
-  /** Edge kinds that lead from an endpoint to its reverse proxy. */
+  /** Edge kinds that lead from an endpoint to its reverse proxy; overrides the profile. */
   proxyKinds?: EdgeKind[];
 }
 
@@ -46,7 +50,8 @@ export interface HealthAnalysis {
   causes: Cause[];
 }
 
-export const STRUCTURAL_KINDS: EdgeKind[] = ['routes', 'via', 'member', 'runs-on', 'depends', 'uplink'];
+/** Structural edge kinds of INFRA_PROFILE. */
+export const STRUCTURAL_KINDS: EdgeKind[] = profileStructuralKinds(INFRA_PROFILE);
 
 /** Where to probe a node: `check`, falling back to `meta.Check` or `meta.URL`. */
 export function checkTarget(node: InfraNode): string | null {
@@ -83,7 +88,8 @@ export function dependencyClosure(topo: Topology, start: string, kinds: EdgeKind
 }
 
 export function analyzeHealth(topo: Topology, results: Record<string, CheckResult | undefined>, opts: HealthOptions = {}): HealthAnalysis {
-  const { structuralKinds = STRUCTURAL_KINDS, proxyKinds = ['via'] } = opts;
+  const profile = opts.profile ?? INFRA_PROFILE;
+  const { structuralKinds = profileStructuralKinds(profile), proxyKinds = profileProxyKinds(profile) } = opts;
   const out = adjacency(topo, structuralKinds);
   const proxies = adjacency(topo, proxyKinds);
   const closures = new Map<string, Set<string>>();

@@ -1,9 +1,13 @@
-import type { EdgeKind, InfraNode, Topology } from './types.js';
+import { INFRA_PROFILE } from './infra-profile.js';
+import { edgeKindSpec, type DomainProfile } from './profile.js';
+import type { InfraNode, Topology } from './types.js';
 
 export type Vec3 = [number, number, number];
 
 export interface LayoutOptions {
-  /** Layer whose nodes are placed on a grid; all other layers follow from it. */
+  /** Anchor layer and edge pulls come from here. Default INFRA_PROFILE. */
+  profile?: DomainProfile;
+  /** Layer whose nodes are placed on a grid; all other layers follow from it. Default: the profile's. */
   anchorLayer?: string;
   layerGap?: number;
   itemGap?: number;
@@ -19,17 +23,9 @@ export interface Layout {
   bounds: { minX: number; maxX: number; minZ: number; maxZ: number };
 }
 
-/** How strongly an edge pulls a node towards its neighbour. */
-const PULL: Partial<Record<EdgeKind, number>> = {
-  routes: 1,
-  member: 1,
-  'runs-on': 1,
-  uplink: 1,
-  via: 0.15,
-};
-
 export function computeLayout(topo: Topology, opts: LayoutOptions = {}): Layout {
-  const { anchorLayer = 'container', layerGap = 10, itemGap = 3.2, groupGap = 3.5, columnGap = 9, minDistance = 2.6 } = opts;
+  const profile = opts.profile ?? INFRA_PROFILE;
+  const { anchorLayer = profile.anchorLayer, layerGap = 10, itemGap = 3.2, groupGap = 3.5, columnGap = 9, minDistance = 2.6 } = opts;
 
   const layerY = new Map(topo.layers.map((l, i) => [l.id, i * layerGap]));
   const positions = new Map<string, Vec3>();
@@ -71,7 +67,7 @@ export function computeLayout(topo: Topology, opts: LayoutOptions = {}): Layout 
   //    layers in order of their distance to the anchor layer.
   const adj = new Map<string, { id: string; w: number }[]>();
   for (const e of topo.edges) {
-    const w = PULL[e.kind] ?? 0;
+    const w = edgeKindSpec(profile, e.kind).pull ?? 0;
     if (!w) continue;
     for (const [a, b] of [[e.from, e.to], [e.to, e.from]]) {
       if (!adj.has(a)) adj.set(a, []);

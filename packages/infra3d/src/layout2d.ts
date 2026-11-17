@@ -1,4 +1,5 @@
 import type { LayoutOptions } from './layout.js';
+import { INFRA_PROFILE } from './infra-profile.js';
 import type { InfraLayer, InfraNode, Topology } from './types.js';
 
 /**
@@ -13,7 +14,7 @@ export interface DiagramLayoutOptions {
   view?: DiagramView;
   /** Layers left out of the diagram; the remaining layers close up. */
   hiddenLayers?: string[];
-  /** Only `anchorLayer` is used: the layer that is split into groups. */
+  /** Only `anchorLayer` (or the profile's) is used: the layer that is split into groups. */
   layout?: LayoutOptions;
   /** Maximum nodes per row in a cell (`layers`, default 5) or card (`hosts`, default 4). */
   perRow?: number;
@@ -79,7 +80,7 @@ export function computeDiagramLayout(topo: Topology, opts: DiagramLayoutOptions 
 }
 
 function layersView(topo: Topology, layers: InfraLayer[], nodes: InfraNode[], opts: DiagramLayoutOptions): DiagramLayout {
-  const anchorLayer = opts.layout?.anchorLayer ?? 'container';
+  const anchorLayer = opts.layout?.anchorLayer ?? (opts.layout?.profile ?? INFRA_PROFILE).anchorLayer;
   const perRowMax = Math.max(1, opts.perRow ?? 5);
   const COLUMN_CAPTION = 24, BAND_CAPTION = 22, BAND_PAD = 6, BAND_GAP = 8, COLUMN_GAP = 14, INSET = 10;
 
@@ -161,7 +162,7 @@ function columnsOf(topo: Topology, nodes: InfraNode[]) {
 }
 
 function hostsView(topo: Topology, layers: InfraLayer[], nodes: InfraNode[], opts: DiagramLayoutOptions): DiagramLayout {
-  const anchorLayer = opts.layout?.anchorLayer ?? 'container';
+  const anchorLayer = opts.layout?.anchorLayer ?? (opts.layout?.profile ?? INFRA_PROFILE).anchorLayer;
   const perRow = Math.max(1, opts.perRow ?? 4);
   const CARD_TITLE = 30, CARD_PAD = 14, CARD_GAP = 20, SECTION_CAPTION = 18, SECTION_GAP = 8, GROUP_CAPTION = 18, GROUP_GAP = 8;
 
