@@ -1,11 +1,15 @@
 import { computeDiagramLayout, shortenLabel, DIAGRAM_NODE_RADIUS as R, type DiagramLayout, type DiagramPoint, type DiagramView } from './layout2d.js';
 import { DRAWIO_THEME } from './drawio.js';
 import type { LayoutOptions } from './layout.js';
+import { INFRA_PROFILE } from './infra-profile.js';
+import { edgeKindSpec, nodeTypeSpec, shapeOf, type DomainProfile, type NodeShape } from './profile.js';
 import { resolveTheme, type InfraTheme } from './theme.js';
 import type { InfraNode, NodeStatus, Topology } from './types.js';
 
 export interface SvgOptions {
   view?: DiagramView;
+  /** Shapes, line styles and what the hosts cards imply. Default INFRA_PROFILE. */
+  profile?: DomainProfile;
   hiddenLayers?: string[];
   layout?: LayoutOptions;
   /** Marks failed nodes red and suspects orange. */
@@ -14,16 +18,14 @@ export interface SvgOptions {
   theme?: Partial<InfraTheme>;
 }
 
-// Implied by the cards of the hosts view
-const IMPLIED_IN_CARD = ['member', 'runs-on'];
-
 /**
  * One 2D view as a standalone SVG document, without a browser: for servers, scripts and images
  * embedded in a wiki. Looks like `<InfraDiagram>` without a selection.
  */
 export function toSvg(topo: Topology, opts: SvgOptions = {}): string {
   const theme = resolveTheme({ ...DRAWIO_THEME, ...opts.theme });
-  const layout = computeDiagramLayout(topo, { view: opts.view, hiddenLayers: opts.hiddenLayers, layout: opts.layout });
+  const profile = opts.profile ?? INFRA_PROFILE;
+  const layout = computeDiagramLayout(topo, { view: opts.view, hiddenLayers: opts.hiddenLayers, layout: { profile, ...opts.layout } });
   const status = opts.status ?? {};
   const w = Math.ceil(layout.width), h = Math.ceil(layout.height);
   const faulty = (id: string) => status[id] === 'down' || status[id] === 'suspect';
@@ -47,17 +49,19 @@ export function toSvg(topo: Topology, opts: SvgOptions = {}): string {
     const a = layout.positions.get(e.from), b = layout.positions.get(e.to);
     if (!a || !b) continue;
     const broken = faulty(e.from) && faulty(e.to);
-    if (!broken && layout.view === 'hosts' && IMPLIED_IN_CARD.includes(e.kind) && cardOf.get(e.from) === cardOf.get(e.to)) continue;
+    const spec = edgeKindSpec(profile, e.kind);
+    // Implied by the cards of the hosts view
+    if (!broken && layout.view === 'hosts' && spec.impliedByColumn && cardOf.get(e.from) === cardOf.get(e.to)) continue;
     const color = broken ? theme.suspect : theme.edgeColors[e.kind] ?? theme.defaultEdgeColor;
-    const opacity = broken ? 0.85 : e.kind === 'via' ? 0.2 : 0.5;
-    const dash = e.kind === 'backup' || e.kind === 'image' || e.kind === 'via' ? ' stroke-dasharray="5 4"' : '';
+    const opacity = broken ? 0.85 : spec.faint ? 0.2 : 0.5;
+    const dash = spec.line === 'dashed' ? ' stroke-dasharray="5 4"' : '';
     out.push(`<path d="${curve(a, b)}" stroke="${color}" stroke-opacity="${opacity}" stroke-width="${broken ? 2 : 1.2}"${dash}/>`);
   }
   out.push('</g>');
 
   for (const n of topo.nodes) {
     const p = layout.positions.get(n.id);
-    if (p) out.push(node(n, p, theme, status[n.id]));
+    if (p) out.push(node(n, p, theme, profile, status[n.id]));
   }
   out.push('</svg>');
   return out.join('\n') + '\n';
@@ -90,25 +94,23 @@ function frames(layout: DiagramLayout, theme: InfraTheme): string {
   return `<g>${s.join('')}</g>`;
 }
 
-function node(n: InfraNode, p: DiagramPoint, theme: InfraTheme, health?: NodeStatus): string {
+function node(n: InfraNode, p: DiagramPoint, theme: InfraTheme, profile: DomainProfile, health?: NodeStatus): string {
   const color = theme.nodeColors[n.type] ?? theme.defaultNodeColor;
   const alarm = health === 'down' || health === 'suspect' ? theme[health] : null;
   const ring = alarm ? `<circle r="${R + 6}" fill="none" stroke="${alarm}" stroke-width="2.5"/>` : '';
-  const label = `<text y="${R + 14}" text-anchor="middle" font-size="11" font-weight="${n.type === 'host' ? 600 : 400}" fill="${theme.labelText}" stroke="${theme.background}" stroke-width="3" stroke-linejoin="round" paint-order="stroke">${esc(shortenLabel(n.label))}</text>`;
+  const label = `<text y="${R + 14}" text-anchor="middle" font-size="11" font-weight="${nodeTypeSpec(profile, n.type).emphasis ? 600 : 400}" fill="${theme.labelText}" stroke="${theme.background}" stroke-width="3" stroke-linejoin="round" paint-order="stroke">${esc(shortenLabel(n.label))}</text>`;
   const tip = `<title>${esc(`${n.label} (${n.type}${health && health !== 'unknown' ? `, ${health}` : ''})`)}</title>`;
-  return `<g transform="translate(${r(p.x)} ${r(p.y)})">${tip}${ring}${shape(n, color)}${label}</g>`;
+  return `<g transform="translate(${r(p.x)} ${r(p.y)})">${tip}${ring}${shape(shapeOf(profile, n), color)}${label}</g>`;
 }
 
-function shape(n: InfraNode, color: string): string {
-  if (n.role === 'database') {
-    return `<path d="M-8 -6V6A8 3 0 0 0 8 6V-6" fill="${color}"/><ellipse cy="-6" rx="8" ry="3" fill="${color}"/><path d="M-8 -6A8 3 0 0 0 8 -6" fill="none" stroke="rgba(0,0,0,0.25)"/>`;
-  }
-  switch (n.type) {
-    case 'host': return `<rect x="-13" y="-8" width="26" height="16" rx="3" fill="${color}"/>`;
-    case 'site': return `<polygon points="-11,0 -5.5,-9.5 5.5,-9.5 11,0 5.5,9.5 -5.5,9.5" fill="${color}"/>`;
-    case 'device': return `<rect x="-10" y="-6" width="20" height="12" rx="2" fill="${color}"/>`;
-    case 'network': return `<circle r="7" fill="none" stroke="${color}" stroke-width="4"/>`;
-    case 'endpoint': return `<polygon points="0,-10 10,0 0,10 -10,0" fill="${color}"/>`;
+function shape(s: NodeShape, color: string): string {
+  switch (s) {
+    case 'cylinder': return `<path d="M-8 -6V6A8 3 0 0 0 8 6V-6" fill="${color}"/><ellipse cy="-6" rx="8" ry="3" fill="${color}"/><path d="M-8 -6A8 3 0 0 0 8 -6" fill="none" stroke="rgba(0,0,0,0.25)"/>`;
+    case 'wide': return `<rect x="-13" y="-8" width="26" height="16" rx="3" fill="${color}"/>`;
+    case 'hexagon': return `<polygon points="-11,0 -5.5,-9.5 5.5,-9.5 11,0 5.5,9.5 -5.5,9.5" fill="${color}"/>`;
+    case 'slab': return `<rect x="-10" y="-6" width="20" height="12" rx="2" fill="${color}"/>`;
+    case 'ring': return `<circle r="7" fill="none" stroke="${color}" stroke-width="4"/>`;
+    case 'diamond': return `<polygon points="0,-10 10,0 0,10 -10,0" fill="${color}"/>`;
     default: return `<rect x="-8" y="-8" width="16" height="16" rx="3" fill="${color}"/>`;
   }
 }

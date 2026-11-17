@@ -3,6 +3,8 @@ import { computeDiagramLayout, shortenLabel, DIAGRAM_NODE_RADIUS as R, type Diag
 import { computeHighlight, type Highlight } from './graph.js';
 import { resolveTheme, type InfraTheme } from './theme.js';
 import type { LayoutOptions } from './layout.js';
+import { INFRA_PROFILE } from './infra-profile.js';
+import { edgeKindSpec, nodeTypeSpec, shapeOf, type DomainProfile, type NodeShape } from './profile.js';
 import type { HighlightMode, InfraEdge, InfraNode, NodeStatus, Topology } from './types.js';
 
 export interface InfraDiagramProps {
@@ -13,6 +15,8 @@ export interface InfraDiagramProps {
   onSelect?: (id: string | null) => void;
   mode?: HighlightMode;
   hiddenLayers?: string[];
+  /** Node shapes, edge styles and how failures travel. Default INFRA_PROFILE. */
+  profile?: DomainProfile;
   /** Live state per node: failed nodes pulse red, suspects are marked orange. */
   status?: Record<string, NodeStatus>;
   theme?: Partial<InfraTheme>;
@@ -35,7 +39,6 @@ interface View { k: number; x: number; y: number }
 
 const MAX_ZOOM = 3;
 const NO_LAYERS: string[] = [];
-const IMPLIED_IN_CARD = ['member', 'runs-on'];
 
 export function InfraDiagram({
   topology,
@@ -44,6 +47,7 @@ export function InfraDiagram({
   onSelect,
   mode = 'both',
   hiddenLayers = NO_LAYERS,
+  profile = INFRA_PROFILE,
   status,
   theme: themeOverrides,
   background,
@@ -52,8 +56,8 @@ export function InfraDiagram({
   style,
   ref,
 }: InfraDiagramProps) {
-  const layout = useMemo(() => computeDiagramLayout(topology, { view, hiddenLayers, layout: layoutOpts }), [topology, view, hiddenLayers, layoutOpts]);
-  const highlight = useMemo(() => computeHighlight(topology, selectedId, mode), [topology, selectedId, mode]);
+  const layout = useMemo(() => computeDiagramLayout(topology, { view, hiddenLayers, layout: { profile, ...layoutOpts } }), [topology, view, hiddenLayers, profile, layoutOpts]);
+  const highlight = useMemo(() => computeHighlight(topology, selectedId, mode, profile), [topology, selectedId, mode, profile]);
   const theme = useMemo(() => resolveTheme(background ? { ...themeOverrides, background } : themeOverrides), [themeOverrides, background]);
   const nodeById = useMemo(() => new Map(topology.nodes.map((n) => [n.id, n])), [topology]);
   const cardOf = useMemo(() => cardIndex(layout), [layout]);
@@ -211,8 +215,8 @@ export function InfraDiagram({
               const faulty = !!status && isFaulty(status[e.from]) && isFaulty(status[e.to]);
               const touched = focusEdges === e.from || focusEdges === e.to;
               // The hosts view draws what the cards imply only when it is highlighted
-              const implied = view === 'hosts' && IMPLIED_IN_CARD.includes(e.kind) && cardOf.get(e.from) === cardOf.get(e.to);
-              return <EdgePath key={i} edge={e} index={i} a={a} b={b} theme={theme} highlight={highlight} faulty={faulty} touched={touched} implied={implied} />;
+              const implied = view === 'hosts' && !!edgeKindSpec(profile, e.kind).impliedByColumn && cardOf.get(e.from) === cardOf.get(e.to);
+              return <EdgePath key={i} edge={e} profile={profile} index={i} a={a} b={b} theme={theme} highlight={highlight} faulty={faulty} touched={touched} implied={implied} />;
             })}
           </g>
           {topology.nodes.map((n) => {
@@ -222,6 +226,7 @@ export function InfraDiagram({
               <NodeGlyph
                 key={n.id}
                 node={n}
+                profile={profile}
                 p={p}
                 theme={theme}
                 selected={n.id === selectedId}
@@ -280,11 +285,12 @@ function Frames({ layout, theme }: { layout: DiagramLayout; theme: InfraTheme })
   );
 }
 
-function EdgePath({ edge, index, a, b, theme, highlight, faulty, touched, implied }: {
-  edge: InfraEdge; index: number; a: DiagramPoint; b: DiagramPoint; theme: InfraTheme; highlight: Highlight | null; faulty: boolean; touched: boolean; implied: boolean;
+function EdgePath({ edge, profile, index, a, b, theme, highlight, faulty, touched, implied }: {
+  edge: InfraEdge; profile: DomainProfile; index: number; a: DiagramPoint; b: DiagramPoint; theme: InfraTheme; highlight: Highlight | null; faulty: boolean; touched: boolean; implied: boolean;
 }) {
+  const spec = edgeKindSpec(profile, edge.kind);
   let color = theme.edgeColors[edge.kind] ?? theme.defaultEdgeColor;
-  let opacity = implied ? 0 : edge.kind === 'via' ? 0.15 : 0.4;
+  let opacity = implied ? 0 : spec.faint ? 0.15 : 0.4;
   let width = 1.2;
   if (faulty) { color = theme.suspect; opacity = 0.85; width = 2; }
   if (touched) { opacity = 0.9; width = 1.8; }
@@ -294,7 +300,7 @@ function EdgePath({ edge, index, a, b, theme, highlight, faulty, touched, implie
     else opacity = implied ? 0 : 0.05;
   }
   if (!opacity) return null;
-  const dashed = edge.kind === 'backup' || edge.kind === 'image' || edge.kind === 'via';
+  const dashed = spec.line === 'dashed';
   return <path d={edgeCurve(a, b)} stroke={color} strokeOpacity={opacity} strokeWidth={width} strokeDasharray={dashed ? '5 4' : undefined} strokeLinecap="round" />;
 }
 
@@ -321,8 +327,8 @@ function nodeState(id: string, h: Highlight | null): NodeState {
   return 'dim';
 }
 
-function NodeGlyph({ node, p, theme, selected, hovered, state, health, onHover, onSelect }: {
-  node: InfraNode; p: DiagramPoint; theme: InfraTheme; selected: boolean; hovered: boolean; state: NodeState; health?: NodeStatus;
+function NodeGlyph({ node, profile, p, theme, selected, hovered, state, health, onHover, onSelect }: {
+  node: InfraNode; profile: DomainProfile; p: DiagramPoint; theme: InfraTheme; selected: boolean; hovered: boolean; state: NodeState; health?: NodeStatus;
   onHover: (id: string | null) => void; onSelect: (id: string) => void;
 }) {
   const color = theme.nodeColors[node.type] ?? theme.defaultNodeColor;
@@ -359,13 +365,13 @@ function NodeGlyph({ node, p, theme, selected, hovered, state, health, onHover, 
       )}
       {ring && <circle r={R + 4} fill="none" stroke={ring} strokeWidth={2} />}
       <g transform={`scale(${scale})`}>
-        <Shape node={node} color={color} outline={outline} />
+        <Shape shape={shapeOf(profile, node)} color={color} outline={outline} />
       </g>
       <text
         y={R + 14}
         textAnchor="middle"
         fontSize={11}
-        fontWeight={selected || node.type === 'host' ? 600 : 400}
+        fontWeight={selected || nodeTypeSpec(profile, node.type).emphasis ? 600 : 400}
         fill={theme.labelText}
         stroke={theme.background}
         strokeWidth={3}
@@ -378,28 +384,26 @@ function NodeGlyph({ node, p, theme, selected, hovered, state, health, onHover, 
   );
 }
 
-function Shape({ node, color, outline }: { node: InfraNode; color: string; outline: string }) {
+function Shape({ shape, color, outline }: { shape: NodeShape; color: string; outline: string }) {
   const stroke = { stroke: outline, strokeWidth: 2 };
-  if (node.role === 'database') {
-    return (
+  switch (shape) {
+    case 'cylinder': return (
       <g>
         <path d="M-8 -6V6A8 3 0 0 0 8 6V-6" fill={color} {...stroke} />
         <ellipse cy={-6} rx={8} ry={3} fill={color} {...stroke} />
         <path d="M-8 -6A8 3 0 0 0 8 -6" fill="none" stroke="rgba(0,0,0,0.25)" />
       </g>
     );
-  }
-  switch (node.type) {
-    case 'host': return <rect x={-13} y={-8} width={26} height={16} rx={3} fill={color} {...stroke} />;
-    case 'site': return <polygon points="-11,0 -5.5,-9.5 5.5,-9.5 11,0 5.5,9.5 -5.5,9.5" fill={color} {...stroke} />;
-    case 'device': return <rect x={-10} y={-6} width={20} height={12} rx={2} fill={color} {...stroke} />;
-    case 'network': return (
+    case 'wide': return <rect x={-13} y={-8} width={26} height={16} rx={3} fill={color} {...stroke} />;
+    case 'hexagon': return <polygon points="-11,0 -5.5,-9.5 5.5,-9.5 11,0 5.5,9.5 -5.5,9.5" fill={color} {...stroke} />;
+    case 'slab': return <rect x={-10} y={-6} width={20} height={12} rx={2} fill={color} {...stroke} />;
+    case 'ring': return (
       <g>
         {outline !== 'none' && <circle r={10.5} fill="none" {...stroke} />}
         <circle r={7} fill="none" stroke={color} strokeWidth={4} />
       </g>
     );
-    case 'endpoint': return <polygon points="0,-10 10,0 0,10 -10,0" fill={color} {...stroke} />;
+    case 'diamond': return <polygon points="0,-10 10,0 0,10 -10,0" fill={color} {...stroke} />;
     default: return <rect x={-8} y={-8} width={16} height={16} rx={3} fill={color} {...stroke} />;
   }
 }

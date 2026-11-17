@@ -5,8 +5,10 @@ import { computeLayout, type LayoutOptions, type Vec3 } from './layout.js';
 import { fitCamera, sceneBox, type CameraAngle, type CameraFit } from './camera.js';
 import { computeHighlight, type Highlight } from './graph.js';
 import type { Mesh } from 'three';
+import { INFRA_PROFILE } from './infra-profile.js';
+import { edgeKindSpec, nodeTypeSpec, shapeOf, type DomainProfile, type NodeShape } from './profile.js';
 import { resolveTheme, type InfraTheme } from './theme.js';
-import type { HighlightMode, InfraEdge, InfraNode, NodeStatus, NodeType, Topology } from './types.js';
+import type { HighlightMode, InfraEdge, InfraNode, NodeStatus, Topology } from './types.js';
 
 export interface InfraSceneProps {
   topology: Topology;
@@ -14,7 +16,9 @@ export interface InfraSceneProps {
   onSelect?: (id: string | null) => void;
   mode?: HighlightMode;
   hiddenLayers?: string[];
-  /** Always show container and endpoint labels, not only on hover or selection. */
+  /** Node shapes, edge styles and how failures travel. Default INFRA_PROFILE. */
+  profile?: DomainProfile;
+  /** Always show all labels, also those the profile shows only on hover or selection (containers, endpoints). */
   showAllLabels?: boolean;
   /** Live state per node: failed nodes pulse red, suspects are marked orange. */
   status?: Record<string, NodeStatus>;
@@ -43,6 +47,7 @@ export function InfraScene({
   onSelect,
   mode = 'both',
   hiddenLayers = [],
+  profile = INFRA_PROFILE,
   showAllLabels = false,
   status,
   theme: themeOverrides,
@@ -53,8 +58,9 @@ export function InfraScene({
   style,
   ref,
 }: InfraSceneProps) {
-  const layout = useMemo(() => computeLayout(topology, layoutOpts), [topology, layoutOpts]);
-  const highlight = useMemo(() => computeHighlight(topology, selectedId, mode), [topology, selectedId, mode]);
+  const layout = useMemo(() => computeLayout(topology, { profile, ...layoutOpts }), [topology, profile, layoutOpts]);
+  const highlight = useMemo(() => computeHighlight(topology, selectedId, mode, profile), [topology, selectedId, mode, profile]);
+  const anchorLayer = layoutOpts?.anchorLayer ?? profile.anchorLayer;
   const hidden = useMemo(() => new Set(hiddenLayers), [hiddenLayers]);
   const nodeById = useMemo(() => new Map(topology.nodes.map((n) => [n.id, n])), [topology]);
   const [hovered, setHovered] = useState<string | null>(null);
@@ -87,7 +93,7 @@ export function InfraScene({
 
           {topology.layers.map((l) =>
             hidden.has(l.id) ? null : (
-              <LayerPlane key={l.id} theme={theme} label={l.label} y={layout.layerY.get(l.id)!} bounds={bounds} columns={l.id === 'container' ? layout.columns : []} />
+              <LayerPlane key={l.id} theme={theme} label={l.label} y={layout.layerY.get(l.id)!} bounds={bounds} columns={l.id === anchorLayer ? layout.columns : []} />
             ),
           )}
 
@@ -96,7 +102,7 @@ export function InfraScene({
             const b = nodeById.get(e.to);
             if (!visible(a) || !visible(b)) return null;
             const faulty = !!status && isFaulty(status[e.from]) && isFaulty(status[e.to]);
-            return <EdgeLine key={i} theme={theme} edge={e} index={i} from={layout.positions.get(e.from)!} to={layout.positions.get(e.to)!} highlight={highlight} faulty={faulty} />;
+            return <EdgeLine key={i} theme={theme} edge={e} profile={profile} index={i} from={layout.positions.get(e.from)!} to={layout.positions.get(e.to)!} highlight={highlight} faulty={faulty} />;
           })}
 
           {topology.nodes.map((n) =>
@@ -104,6 +110,7 @@ export function InfraScene({
               <NodeMesh
                 key={n.id}
                 node={n}
+                profile={profile}
                 theme={theme}
                 position={layout.positions.get(n.id)!}
                 selected={n.id === selectedId}
@@ -113,7 +120,7 @@ export function InfraScene({
                 showLabel={
                   showAllLabels ||
                   n.id === hovered ||
-                  !['container', 'endpoint'].includes(n.type) ||
+                  !nodeTypeSpec(profile, n.type).labelOnHover ||
                   isFaulty(status?.[n.id]) ||
                   (!!highlight && nodeState(n.id, highlight) !== 'dim')
                 }
@@ -252,12 +259,13 @@ function PlaneOutline({ color, cx, cz, w, d }: { color: string; cx: number; cz: 
   );
 }
 
-function EdgeLine({ theme, edge, index, from, to, highlight, faulty }: { theme: InfraTheme; edge: InfraEdge; index: number; from: Vec3; to: Vec3; highlight: Highlight | null; faulty: boolean }) {
+function EdgeLine({ theme, edge, profile, index, from, to, highlight, faulty }: { theme: InfraTheme; edge: InfraEdge; profile: DomainProfile; index: number; from: Vec3; to: Vec3; highlight: Highlight | null; faulty: boolean }) {
   const sameLayer = Math.abs(from[1] - to[1]) < 0.01;
   const mid: Vec3 = [(from[0] + to[0]) / 2, (from[1] + to[1]) / 2 + (sameLayer ? 1.5 + Math.hypot(to[0] - from[0], to[2] - from[2]) * 0.12 : 0), (from[2] + to[2]) / 2];
 
+  const spec = edgeKindSpec(profile, edge.kind);
   let color = theme.edgeColors[edge.kind] ?? theme.defaultEdgeColor;
-  let opacity = edge.kind === 'via' ? 0.12 : 0.35;
+  let opacity = spec.faint ? 0.12 : 0.35;
   let width = 1;
   if (faulty) { color = theme.suspect; opacity = 0.8; width = 2; }
   if (highlight) {
@@ -274,7 +282,7 @@ function EdgeLine({ theme, edge, index, from, to, highlight, faulty }: { theme: 
       lineWidth={width}
       transparent
       opacity={opacity}
-      dashed={edge.kind === 'backup' || edge.kind === 'image' || edge.kind === 'via'}
+      dashed={spec.line === 'dashed'}
       dashSize={0.6}
       gapSize={0.4}
       depthWrite={false}
@@ -283,16 +291,17 @@ function EdgeLine({ theme, edge, index, from, to, highlight, faulty }: { theme: 
 }
 
 function NodeMesh({
-  node, theme, position, selected, hovered, state, health, showLabel, onHover, onSelect,
+  node, profile, theme, position, selected, hovered, state, health, showLabel, onHover, onSelect,
 }: {
-  node: InfraNode; theme: InfraTheme; position: Vec3; selected: boolean; hovered: boolean; state: NodeState; health?: NodeStatus; showLabel: boolean;
+  node: InfraNode; profile: DomainProfile; theme: InfraTheme; position: Vec3; selected: boolean; hovered: boolean; state: NodeState; health?: NodeStatus; showLabel: boolean;
   onHover: (id: string | null) => void; onSelect: (id: string) => void;
 }) {
   const base = theme.nodeColors[node.type] ?? theme.defaultNodeColor;
   const dim = state === 'dim';
   const ring = state === 'down' ? theme.needs : state === 'up' ? theme.affects : null;
   const alarm = health === 'down' || health === 'suspect' ? theme[health] : null;
-  const isDb = node.role === 'database';
+  const shape = shapeOf(profile, node);
+  const emphasis = !!nodeTypeSpec(profile, node.type).emphasis;
   const scale = selected ? 1.35 : hovered ? 1.15 : 1;
 
   const handlers = {
@@ -303,8 +312,8 @@ function NodeMesh({
 
   return (
     <group position={position}>
-      <mesh {...handlers} scale={scale} rotation={node.type === 'network' ? [Math.PI / 2, 0, 0] : [0, 0, 0]}>
-        <Shape type={node.type} isDb={isDb} />
+      <mesh {...handlers} scale={scale} rotation={shape === 'ring' ? [Math.PI / 2, 0, 0] : [0, 0, 0]}>
+        <Shape shape={shape} />
         <meshStandardMaterial
           color={base}
           emissive={selected ? '#ffffff' : ring ?? base}
@@ -323,8 +332,8 @@ function NodeMesh({
       )}
       {alarm && <AlarmRing color={alarm} pulse={health === 'down'} />}
       {showLabel && (
-        <Label position={[0, node.type === 'host' ? 1.6 : 1.2, 0]} center distanceFactor={32} style={{ pointerEvents: 'none' }} zIndexRange={[10, 0]}>
-          <div style={{ ...nodeLabelStyle, color: theme.labelText, background: theme.labelBackground, fontFamily: theme.fontFamily, opacity: dim ? 0.25 : 1, borderColor: selected ? '#fff' : alarm ?? ring ?? 'transparent', fontWeight: node.type === 'host' || selected ? 600 : 400 }}>
+        <Label position={[0, shape === 'wide' ? 1.6 : 1.2, 0]} center distanceFactor={32} style={{ pointerEvents: 'none' }} zIndexRange={[10, 0]}>
+          <div style={{ ...nodeLabelStyle, color: theme.labelText, background: theme.labelBackground, fontFamily: theme.fontFamily, opacity: dim ? 0.25 : 1, borderColor: selected ? '#fff' : alarm ?? ring ?? 'transparent', fontWeight: emphasis || selected ? 600 : 400 }}>
             {node.label}
           </div>
         </Label>
@@ -348,15 +357,15 @@ function AlarmRing({ color, pulse }: { color: string; pulse: boolean }) {
   );
 }
 
-function Shape({ type, isDb }: { type: NodeType; isDb: boolean }) {
-  switch (type) {
-    case 'host': return <boxGeometry args={[3, 1.4, 3]} />;
-    case 'site': return <cylinderGeometry args={[1.6, 1.6, 0.8, 6]} />;
-    case 'device': return <boxGeometry args={[2, 1, 1.4]} />;
-    case 'network': return <torusGeometry args={[0.85, 0.28, 12, 32]} />;
-    case 'endpoint': return <octahedronGeometry args={[0.75]} />;
-    case 'container': return isDb ? <cylinderGeometry args={[0.6, 0.6, 1.1, 20]} /> : <boxGeometry args={[1.1, 1.1, 1.1]} />;
-    default: return isDb ? <cylinderGeometry args={[0.6, 0.6, 1.1, 20]} /> : <boxGeometry args={[1.2, 1.2, 1.2]} />;
+function Shape({ shape }: { shape: NodeShape }) {
+  switch (shape) {
+    case 'wide': return <boxGeometry args={[3, 1.4, 3]} />;
+    case 'hexagon': return <cylinderGeometry args={[1.6, 1.6, 0.8, 6]} />;
+    case 'slab': return <boxGeometry args={[2, 1, 1.4]} />;
+    case 'ring': return <torusGeometry args={[0.85, 0.28, 12, 32]} />;
+    case 'diamond': return <octahedronGeometry args={[0.75]} />;
+    case 'cylinder': return <cylinderGeometry args={[0.6, 0.6, 1.1, 20]} />;
+    default: return <boxGeometry args={[1.1, 1.1, 1.1]} />;
   }
 }
 

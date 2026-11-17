@@ -1,7 +1,6 @@
-import type { EdgeKind, HighlightMode, Topology } from './types.js';
-
-/** Edges a failure does not propagate beyond (followed for one step only). */
-const NON_PROPAGATING: EdgeKind[] = ['backup'];
+import { INFRA_PROFILE } from './infra-profile.js';
+import { propagates, type DomainProfile } from './profile.js';
+import type { HighlightMode, Topology } from './types.js';
 
 export interface Reach {
   nodes: Set<string>;
@@ -11,8 +10,9 @@ export interface Reach {
 /**
  * 'down': everything `start` depends on (edges forward).
  * 'up':   everything that fails when `start` fails (edges backward).
+ * Edges the profile marks as not propagating are followed for one step only.
  */
-export function traverse(topo: Topology, start: string, dir: 'down' | 'up'): Reach {
+export function traverse(topo: Topology, start: string, dir: 'down' | 'up', profile: DomainProfile = INFRA_PROFILE): Reach {
   const out = new Map<string, number[]>();
   topo.edges.forEach((e, i) => {
     const key = dir === 'down' ? e.from : e.to;
@@ -31,7 +31,7 @@ export function traverse(topo: Topology, start: string, dir: 'down' | 'up'): Rea
       edges.add(i);
       if (nodes.has(next)) continue;
       nodes.add(next);
-      if (!NON_PROPAGATING.includes(e.kind)) queue.push(next);
+      if (propagates(profile, e.kind)) queue.push(next);
     }
   }
   return { nodes, edges };
@@ -42,12 +42,12 @@ export interface Highlight {
   up: Reach;
 }
 
-export function computeHighlight(topo: Topology, selected: string | null | undefined, mode: HighlightMode): Highlight | null {
+export function computeHighlight(topo: Topology, selected: string | null | undefined, mode: HighlightMode, profile: DomainProfile = INFRA_PROFILE): Highlight | null {
   if (!selected) return null;
   const empty: Reach = { nodes: new Set([selected]), edges: new Set() };
   return {
-    down: mode === 'impact' ? empty : traverse(topo, selected, 'down'),
-    up: mode === 'deps' ? empty : traverse(topo, selected, 'up'),
+    down: mode === 'impact' ? empty : traverse(topo, selected, 'down', profile),
+    up: mode === 'deps' ? empty : traverse(topo, selected, 'up', profile),
   };
 }
 

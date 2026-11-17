@@ -2,8 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   InfraScene, InfraDiagram, toDrawio, DEFAULT_THEME, NODE_COLORS, DOWN_COLOR, UP_COLOR, STATUS_COLORS,
   analyzeHealth, checkTarget, computeHighlight, dependencyClosure, neighbors, validateTopology,
+  INFRA_PROFILE, edgeLabel as profileEdgeLabel, proxyKinds, typeLabel as profileTypeLabel,
 } from 'infra3d';
-import type { BuiltinEdgeKind, BuiltinNodeType, CheckResult, HighlightMode, InfraDiagramHandle, InfraEdge, InfraNode, InfraSceneHandle, NodeType, Topology } from 'infra3d';
+import type { CheckResult, HighlightMode, InfraDiagramHandle, InfraEdge, InfraNode, InfraSceneHandle, NodeType, Topology } from 'infra3d';
 import { clock, since, useLiveState, type LiveState } from './live';
 
 // Two modes: the static demo (GitHub Pages, `--mode demo`) and the live app served by the infra3d server.
@@ -16,29 +17,6 @@ async function loadDemoTopology(): Promise<Topology> {
   const local = Object.values(import.meta.glob<Topology>('./data/local.json', { import: 'default' }))[0];
   return local ? local() : ((await import('./data/example.json')).default as Topology);
 }
-
-const TYPE_LABEL: Record<BuiltinNodeType, string> = {
-  site: 'Site',
-  device: 'Device',
-  host: 'Host',
-  network: 'Network',
-  container: 'Container',
-  endpoint: 'Endpoint',
-};
-
-const EDGE_LABEL: Record<BuiltinEdgeKind, [string, string]> = {
-  // [outgoing, incoming]
-  routes: ['routes to', 'reachable via'],
-  via: ['goes through', 'forwards'],
-  auth: ['login via', 'protects'],
-  member: ['in network', 'member'],
-  'runs-on': ['runs on', 'hosts network'],
-  depends: ['depends on', 'needed by'],
-  uses: ['uses', 'used by'],
-  image: ['image from', 'provides image to'],
-  uplink: ['connected to', 'connects'],
-  backup: ['backs up to', 'backup of'],
-};
 
 type ViewKind = '3d' | 'layers' | 'hosts';
 const VIEWS: [ViewKind, string][] = [['3d', '3D'], ['layers', 'Layers'], ['hosts', 'Hosts']];
@@ -62,8 +40,10 @@ function download(name: string, type: string, content: string) {
 /** File name from the topology name, e.g. "Homelab & Cloud" -> "homelab-cloud". */
 const fileBase = (t: Topology) => (t.name ?? 'infra3d').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'infra3d';
 
-const typeLabel = (t: NodeType) => TYPE_LABEL[t as BuiltinNodeType] ?? t;
-const edgeLabel = (e: InfraEdge, dir: 0 | 1) => EDGE_LABEL[e.kind as BuiltinEdgeKind]?.[dir] ?? e.kind;
+const PROFILE = INFRA_PROFILE;
+const PROXY_KINDS = proxyKinds(PROFILE);
+const typeLabel = (t: NodeType) => profileTypeLabel(PROFILE, t);
+const edgeLabel = (e: InfraEdge, dir: 0 | 1) => profileEdgeLabel(PROFILE, e.kind, dir ? 'in' : 'out');
 
 /** What outside-in health checks would report if the given nodes were broken. */
 function simulateChecks(topology: Topology, endpoints: InfraNode[], broken: string[]): Record<string, CheckResult> {
@@ -71,7 +51,7 @@ function simulateChecks(topology: Topology, endpoints: InfraNode[], broken: stri
   const hit = (id: string) => [...dependencyClosure(topology, id)].some((x) => failed.has(x));
   const results: Record<string, CheckResult> = {};
   for (const n of endpoints) {
-    const proxies = topology.edges.filter((e) => e.from === n.id && e.kind === 'via').map((e) => e.to);
+    const proxies = topology.edges.filter((e) => e.from === n.id && PROXY_KINDS.includes(e.kind)).map((e) => e.to);
     results[n.id] = { ok: !hit(n.id), answered: proxies.length > 0 && !proxies.some(hit) };
   }
   return results;
@@ -346,8 +326,8 @@ function Explorer({ topology, live, busy, onCheckNow, initialBroken = [], intro 
         )}
 
         <section className="types">
-          {(Object.keys(TYPE_LABEL) as BuiltinNodeType[]).map((t) => (
-            <span key={t}><Dot type={t} /> {TYPE_LABEL[t]}</span>
+          {Object.keys(PROFILE.nodeTypes).map((t) => (
+            <span key={t}><Dot type={t} /> {typeLabel(t)}</span>
           ))}
           <span><span className="dot" style={{ background: STATUS_COLORS.down }} /> down</span>
           <span><span className="dot" style={{ background: STATUS_COLORS.suspect }} /> suspect</span>

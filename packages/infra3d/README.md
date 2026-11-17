@@ -41,7 +41,8 @@ The scene fills its parent, so give the parent a height.
 | `onSelect` | `(id \| null) => void` | click on a node, or `null` on empty space |
 | `mode` | `'deps' \| 'impact' \| 'both'` | which direction to highlight, default `both` |
 | `hiddenLayers` | `string[]` | layer ids to hide |
-| `showAllLabels` | `boolean` | label every container and endpoint, not only on hover |
+| `profile` | `DomainProfile` | node shapes, edge styles and how failures travel, default `INFRA_PROFILE` (see [Domain profiles](#domain-profiles)) |
+| `showAllLabels` | `boolean` | label every node, also those the profile labels only on hover (containers, endpoints) |
 | `status` | `Record<id, 'ok' \| 'down' \| 'suspect' \| 'unknown'>` | failed nodes pulse red, suspects are orange |
 | `theme` | `Partial<InfraTheme>` | colours and font, merged into `DEFAULT_THEME` |
 | `layout` | `LayoutOptions` | spacing and the anchor layer |
@@ -162,15 +163,54 @@ const { status, down, suspects, causes } = analyzeHealth(topology, results);
    and everything below it run.
 4. Causes that explain the most failures rank first; on a tie the lower layer wins.
 
-Only `routes`, `via`, `member`, `runs-on`, `depends` and `uplink` count as structural by default
-(`structuralKinds` option). `checkTarget(node)` returns `node.check` or `meta.URL`.
+Only `routes`, `via`, `member`, `runs-on`, `depends` and `uplink` count as structural by default.
+The `profile` option takes them from another domain profile; `structuralKinds` and `proxyKinds`
+override single lists. `checkTarget(node)` returns `node.check` or `meta.URL`.
 
 Tip for Traefik: a 404 with the exact body `404 page not found` means no router matched,
 which usually means the container is gone. Count it as a failure with `answered: true`.
 
+## Domain profiles
+
+Everything specific to infrastructure lives in one plain, JSON-compatible object, `INFRA_PROFILE`:
+the node types with their shapes, the edge kinds with their wording and line style, which edges
+pass a failure on, which ones are structural for the health analysis, and the anchor layer of the
+layout. Every function and component takes a `profile` (`toSvg`, `toDrawio`, `analyzeHealth` as an
+option, `computeLayout` and `computeDiagramLayout` through `layout.profile`, `traverse` and
+`computeHighlight` as the last argument) and defaults to `INFRA_PROFILE`.
+
+```ts
+import type { DomainProfile } from 'infra3d/core';
+
+const CI: DomainProfile = {
+  id: 'ci',
+  label: 'CI pipelines',
+  anchorLayer: 'workflow',
+  nodeTypes: {
+    pipeline: { label: 'Pipeline', shape: 'wide', emphasis: true },
+    workflow: { label: 'Workflow', shape: 'hexagon' },
+    step: { label: 'Step', shape: 'diamond' },
+  },
+  edgeKinds: {
+    contains: { label: ['contains', 'part of'], structural: true, pull: 1, impliedByColumn: true },
+    needs: { label: ['needs', 'needed by'], structural: true },
+    // A failing notification blocks nothing
+    notifies: { line: 'dashed', faint: true, propagates: false },
+  },
+};
+
+<InfraDiagram topology={pipelines} profile={CI} view="hosts" />
+```
+
+Shapes are abstract (`box`, `wide`, `slab`, `hexagon`, `ring`, `diamond`, `cylinder`); the 3D scene,
+the SVG and draw.io each draw them their own way. `roles` override the shape by `node.role`, as
+`database` → `cylinder` does for infrastructure. Colours stay in the theme, keyed by node type and
+edge kind. `typeLabel(profile, type)` and `edgeLabel(profile, kind, 'out' | 'in')` give the wording
+for legends and detail panels.
+
 ## Other exports
 
-`computeLayout`, `fitCamera` / `sceneBox` (the overview camera as a pure function), `traverse`, `computeHighlight`, `neighbors`, `dependencyClosure`,
+`INFRA_PROFILE` and the profile helpers (`shapeOf`, `typeLabel`, `edgeLabel`, `structuralKinds`, `proxyKinds`, …), `computeLayout`, `fitCamera` / `sceneBox` (the overview camera as a pure function), `traverse`, `computeHighlight`, `neighbors`, `dependencyClosure`,
 `DEFAULT_THEME`, `resolveTheme`, and the colour constants `NODE_COLORS`, `EDGE_COLORS`,
 `STATUS_COLORS`, `DOWN_COLOR`, `UP_COLOR` for building legends, and `computeDiagramLayout`,
 `toDrawio`, `toSvg` and `DRAWIO_THEME` for the 2D views. Everything except the two components is also

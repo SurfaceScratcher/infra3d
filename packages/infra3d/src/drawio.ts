@@ -1,5 +1,7 @@
 import { computeDiagramLayout, DIAGRAM_NODE_RADIUS, type DiagramBox, type DiagramLayout, type DiagramView } from './layout2d.js';
 import type { LayoutOptions } from './layout.js';
+import { INFRA_PROFILE } from './infra-profile.js';
+import { edgeKindSpec, shapeOf, type DomainProfile, type NodeShape } from './profile.js';
 import { resolveTheme, type InfraTheme } from './theme.js';
 import type { InfraNode, NodeStatus, Topology } from './types.js';
 
@@ -10,6 +12,8 @@ export interface DrawioOptions {
   pageNames?: Partial<Record<DiagramView, string>>;
   hiddenLayers?: string[];
   layout?: LayoutOptions;
+  /** Shapes, line styles and what the hosts cards imply. Default INFRA_PROFILE. */
+  profile?: DomainProfile;
   /** Marks failed nodes red and suspects orange. */
   status?: Record<string, NodeStatus>;
   /** Colours; anything left out falls back to DRAWIO_THEME, which suits a white wiki page. */
@@ -33,8 +37,6 @@ export const DRAWIO_THEME: InfraTheme = resolveTheme({
 });
 
 const PAGE_NAMES: Record<DiagramView, string> = { layers: 'Layers', hosts: 'Hosts' };
-// Implied by the cards of the hosts view, so drawing them there only adds clutter
-const IMPLIED_IN_CARD = ['member', 'runs-on'];
 
 /**
  * The 2D diagrams as an uncompressed draw.io (diagrams.net) file, e.g. to embed with the draw.io
@@ -44,15 +46,16 @@ const IMPLIED_IN_CARD = ['member', 'runs-on'];
 export function toDrawio(topo: Topology, opts: DrawioOptions = {}): string {
   const theme = resolveTheme({ ...DRAWIO_THEME, ...opts.theme });
   const views = opts.views ?? ['layers', 'hosts'];
+  const profile = opts.profile ?? INFRA_PROFILE;
   const pages = views.map((view, i) => {
-    const layout = computeDiagramLayout(topo, { view, hiddenLayers: opts.hiddenLayers, layout: opts.layout });
+    const layout = computeDiagramLayout(topo, { view, hiddenLayers: opts.hiddenLayers, layout: { profile, ...opts.layout } });
     const name = opts.pageNames?.[view] ?? PAGE_NAMES[view];
-    return `  <diagram id="infra3d-${view}-${i}" name="${esc(name)}">\n${graphModel(topo, layout, theme, opts.status)}\n  </diagram>`;
+    return `  <diagram id="infra3d-${view}-${i}" name="${esc(name)}">\n${graphModel(topo, layout, theme, profile, opts.status)}\n  </diagram>`;
   });
   return `<mxfile host="infra3d" type="device">\n${pages.join('\n')}\n</mxfile>\n`;
 }
 
-function graphModel(topo: Topology, layout: DiagramLayout, theme: InfraTheme, status?: Record<string, NodeStatus>): string {
+function graphModel(topo: Topology, layout: DiagramLayout, theme: InfraTheme, profile: DomainProfile, status?: Record<string, NodeStatus>): string {
   const cells: string[] = ['<mxCell id="0"/>', '<mxCell id="1" parent="0"/>'];
   const prefix = layout.view;
   const font = `fontFamily=${theme.fontFamily.split(',')[0].replace(/["']/g, '').trim()};`;
@@ -103,11 +106,12 @@ function graphModel(topo: Topology, layout: DiagramLayout, theme: InfraTheme, st
     const n = nodeById.get(id)!;
     const parent = owner(p);
     nodeOwner.set(id, parent);
-    const [w, h] = n.type === 'host' ? [S + 6, S - 2] : [S, S];
+    const shape = shapeOf(profile, n);
+    const [w, h] = shape === 'wide' ? [S + 6, S - 2] : [S, S];
     const [x, y] = relative({ x: p.x - w / 2, y: p.y - h / 2 }, parent);
     const health = status?.[id];
     const alarm = health === 'down' || health === 'suspect' ? theme[health] : null;
-    const style = `${shapeStyle(n)}fillColor=${theme.nodeColors[n.type] ?? theme.defaultNodeColor};strokeColor=${alarm ?? darken(theme.nodeColors[n.type] ?? theme.defaultNodeColor)};strokeWidth=${alarm ? 3 : 1};verticalLabelPosition=bottom;verticalAlign=top;labelPosition=center;align=center;spacingTop=-2;fontSize=11;fontColor=${theme.labelText};whiteSpace=nowrap;${font}`;
+    const style = `${shapeStyle(shape)}fillColor=${theme.nodeColors[n.type] ?? theme.defaultNodeColor};strokeColor=${alarm ?? darken(theme.nodeColors[n.type] ?? theme.defaultNodeColor)};strokeWidth=${alarm ? 3 : 1};verticalLabelPosition=bottom;verticalAlign=top;labelPosition=center;align=center;spacingTop=-2;fontSize=11;fontColor=${theme.labelText};whiteSpace=nowrap;${font}`;
     const link = n.check?.startsWith('https://') || n.check?.startsWith('http://') ? n.check : undefined;
     cells.push(cell(`${prefix}:node:${id}`, n.label, style, parent?.cellId ?? '1', 'vertex="1"', geometry(x, y, w, h), { link, tooltip: tooltip(n, health) }));
   }
@@ -115,9 +119,11 @@ function graphModel(topo: Topology, layout: DiagramLayout, theme: InfraTheme, st
   topo.edges.forEach((e, i) => {
     if (!layout.positions.has(e.from) || !layout.positions.has(e.to)) return;
     const a = nodeOwner.get(e.from), b = nodeOwner.get(e.to);
-    if (layout.view === 'hosts' && IMPLIED_IN_CARD.includes(e.kind) && card(a) === card(b)) return;
-    const dashed = e.kind === 'backup' || e.kind === 'image' || e.kind === 'via';
-    const style = `endArrow=classic;endSize=5;html=1;rounded=1;curved=1;strokeColor=${theme.edgeColors[e.kind] ? darken(theme.edgeColors[e.kind]) : theme.defaultEdgeColor};opacity=${e.kind === 'via' ? 35 : 70};dashed=${dashed ? 1 : 0};fontSize=9;fontColor=${theme.layerLabel};${font}`;
+    const spec = edgeKindSpec(profile, e.kind);
+    // The cards of the hosts view imply these, so drawing them there only adds clutter
+    if (layout.view === 'hosts' && spec.impliedByColumn && card(a) === card(b)) return;
+    const dashed = spec.line === 'dashed';
+    const style = `endArrow=classic;endSize=5;html=1;rounded=1;curved=1;strokeColor=${theme.edgeColors[e.kind] ? darken(theme.edgeColors[e.kind]) : theme.defaultEdgeColor};opacity=${spec.faint ? 35 : 70};dashed=${dashed ? 1 : 0};fontSize=9;fontColor=${theme.layerLabel};${font}`;
     cells.push(cell(`${prefix}:edge:${i}`, e.label ?? '', style, '1', `edge="1" source="${esc(`${prefix}:node:${e.from}`)}" target="${esc(`${prefix}:node:${e.to}`)}"`, '<mxGeometry relative="1" as="geometry"/>', { tooltip: e.kind }));
   });
 
@@ -131,14 +137,14 @@ function card<T extends { parent: T | null }>(c: T | null | undefined): T | null
   return cur;
 }
 
-function shapeStyle(n: InfraNode): string {
-  if (n.role === 'database') return 'shape=cylinder3;boundedLbl=1;backgroundOutline=1;size=4;';
-  switch (n.type) {
-    case 'host': return 'rounded=1;arcSize=15;';
-    case 'site': return 'shape=hexagon;perimeter=hexagonPerimeter2;size=0.25;';
-    case 'device': return 'rounded=1;arcSize=10;';
-    case 'network': return 'ellipse;perimeter=ellipsePerimeter;';
-    case 'endpoint': return 'rhombus;perimeter=rhombusPerimeter;';
+function shapeStyle(s: NodeShape): string {
+  switch (s) {
+    case 'cylinder': return 'shape=cylinder3;boundedLbl=1;backgroundOutline=1;size=4;';
+    case 'wide': return 'rounded=1;arcSize=15;';
+    case 'hexagon': return 'shape=hexagon;perimeter=hexagonPerimeter2;size=0.25;';
+    case 'slab': return 'rounded=1;arcSize=10;';
+    case 'ring': return 'ellipse;perimeter=ellipsePerimeter;';
+    case 'diamond': return 'rhombus;perimeter=rhombusPerimeter;';
     default: return 'rounded=1;arcSize=20;';
   }
 }
