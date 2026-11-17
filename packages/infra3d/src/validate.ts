@@ -1,3 +1,4 @@
+import { BUILTIN_PROFILES, NODE_SHAPES } from './profile.js';
 import { SCHEMA_VERSION, type Topology } from './types.js';
 
 export interface ValidationResult {
@@ -35,6 +36,7 @@ export function validateTopology(input: unknown): ValidationResult {
   }
   if (errors.length) return done();
   const topo = input as unknown as Topology;
+  checkProfile(input.profile, input.layers as unknown[], errors, warnings);
 
   const layerIds = new Set<string>();
   topo.layers.forEach((l, i) => {
@@ -62,6 +64,7 @@ export function validateTopology(input: unknown): ValidationResult {
       errors.push(`${name}: "offset" must be [x, z]`);
     }
     if (n.meta !== undefined && !isObject(n.meta)) errors.push(`${name}: "meta" must be an object`);
+    if (n.status !== undefined && !STATUSES.includes(n.status)) errors.push(`${name}: "status" must be one of ${STATUSES.join(', ')}`);
     if (columns && n.column !== undefined && !columns.has(n.column)) warnings.push(`${name}: column "${n.column}" is not listed in "columns"`);
   });
 
@@ -77,4 +80,55 @@ export function validateTopology(input: unknown): ValidationResult {
   });
 
   return done();
+}
+
+const STATUSES = ['ok', 'down', 'suspect', 'unknown'];
+
+/** `profile` is a built-in name or a whole profile; mirrors the profile part of the schema. */
+function checkProfile(p: unknown, layers: unknown[], errors: string[], warnings: string[]) {
+  if (p === undefined) return;
+  if (typeof p === 'string') {
+    if (!BUILTIN_PROFILES[p]) warnings.push(`profile "${p}" is not built in (${Object.keys(BUILTIN_PROFILES).join(', ')}); apps that do not know it fall back to "infra"`);
+    return;
+  }
+  if (!isObject(p)) {
+    errors.push('"profile" must be a name or a profile object');
+    return;
+  }
+  for (const key of ['id', 'label', 'anchorLayer'] as const) if (!isString(p[key])) errors.push(`profile: needs a string "${key}"`);
+  const layerIds = new Set(layers.map((l) => (isObject(l) ? l.id : undefined)));
+  if (isString(p.anchorLayer) && !layerIds.has(p.anchorLayer)) warnings.push(`profile: anchorLayer "${p.anchorLayer}" is not a layer of this topology`);
+  const shape = (v: unknown, at: string) => {
+    if (v !== undefined && !NODE_SHAPES.includes(v as never)) errors.push(`${at}: unknown shape ${JSON.stringify(v)}, expected one of ${NODE_SHAPES.join(', ')}`);
+  };
+  const colour = (v: unknown, at: string) => {
+    if (v !== undefined && !isString(v)) errors.push(`${at}: "color" must be a string`);
+  };
+  for (const [key, label] of [['nodeTypes', 'node type'], ['edgeKinds', 'edge kind']] as const) {
+    if (!isObject(p[key])) {
+      errors.push(`profile: "${key}" must be an object`);
+      continue;
+    }
+    for (const [name, spec] of Object.entries(p[key] as Record<string, unknown>)) {
+      const at = `profile ${label} "${name}"`;
+      if (!isObject(spec)) {
+        errors.push(`${at}: must be an object`);
+        continue;
+      }
+      colour(spec.color, at);
+      if (key === 'nodeTypes') shape(spec.shape, at);
+      if (key === 'edgeKinds') {
+        if (spec.line !== undefined && spec.line !== 'solid' && spec.line !== 'dashed') errors.push(`${at}: "line" must be "solid" or "dashed"`);
+        if (spec.label !== undefined && !(Array.isArray(spec.label) && spec.label.length === 2 && spec.label.every((x) => typeof x === 'string'))) {
+          errors.push(`${at}: "label" must be [outgoing, incoming]`);
+        }
+        if (spec.pull !== undefined && !Number.isFinite(spec.pull)) errors.push(`${at}: "pull" must be a number`);
+      }
+    }
+  }
+  if (p.roles !== undefined) {
+    if (!isObject(p.roles)) errors.push('profile: "roles" must be an object');
+    else for (const [name, spec] of Object.entries(p.roles)) shape(isObject(spec) ? spec.shape : spec, `profile role "${name}"`);
+  }
+  shape(p.defaultShape, 'profile defaultShape');
 }

@@ -1,18 +1,17 @@
 import { computeDiagramLayout, shortenLabel, DIAGRAM_NODE_RADIUS as R, type DiagramLayout, type DiagramPoint, type DiagramView } from './layout2d.js';
 import { DRAWIO_THEME } from './drawio.js';
 import type { LayoutOptions } from './layout.js';
-import { INFRA_PROFILE } from './infra-profile.js';
-import { edgeKindSpec, nodeTypeSpec, shapeOf, type DomainProfile, type NodeShape } from './profile.js';
+import { edgeKindSpec, nodeTypeSpec, reportedStatus, resolveProfile, shapeOf, type DomainProfile, type NodeShape } from './profile.js';
 import { resolveTheme, type InfraTheme } from './theme.js';
 import type { InfraNode, NodeStatus, Topology } from './types.js';
 
 export interface SvgOptions {
   view?: DiagramView;
-  /** Shapes, line styles and what the hosts cards imply. Default INFRA_PROFILE. */
+  /** Shapes, colours, line styles and what the hosts cards imply. Default: the topology's (`topology.profile`), else INFRA_PROFILE. */
   profile?: DomainProfile;
   hiddenLayers?: string[];
   layout?: LayoutOptions;
-  /** Marks failed nodes red and suspects orange. */
+  /** Marks failed nodes red and suspects orange. Default: the `status` the nodes carry. */
   status?: Record<string, NodeStatus>;
   /** Colours; anything left out falls back to DRAWIO_THEME (light). Pass DEFAULT_THEME for the dark look of the app. */
   theme?: Partial<InfraTheme>;
@@ -23,10 +22,10 @@ export interface SvgOptions {
  * embedded in a wiki. Looks like `<InfraDiagram>` without a selection.
  */
 export function toSvg(topo: Topology, opts: SvgOptions = {}): string {
-  const theme = resolveTheme({ ...DRAWIO_THEME, ...opts.theme });
-  const profile = opts.profile ?? INFRA_PROFILE;
+  const profile = opts.profile ?? resolveProfile(topo);
+  const theme = resolveTheme(opts.theme, profile, DRAWIO_THEME);
   const layout = computeDiagramLayout(topo, { view: opts.view, hiddenLayers: opts.hiddenLayers, layout: { profile, ...opts.layout } });
-  const status = opts.status ?? {};
+  const status = opts.status ?? reportedStatus(topo) ?? {};
   const w = Math.ceil(layout.width), h = Math.ceil(layout.height);
   const faulty = (id: string) => status[id] === 'down' || status[id] === 'suspect';
 

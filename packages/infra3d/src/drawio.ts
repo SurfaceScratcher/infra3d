@@ -1,7 +1,6 @@
 import { computeDiagramLayout, DIAGRAM_NODE_RADIUS, type DiagramBox, type DiagramLayout, type DiagramView } from './layout2d.js';
 import type { LayoutOptions } from './layout.js';
-import { INFRA_PROFILE } from './infra-profile.js';
-import { edgeKindSpec, shapeOf, type DomainProfile, type NodeShape } from './profile.js';
+import { edgeKindSpec, reportedStatus, resolveProfile, shapeOf, type DomainProfile, type NodeShape } from './profile.js';
 import { resolveTheme, type InfraTheme } from './theme.js';
 import type { InfraNode, NodeStatus, Topology } from './types.js';
 
@@ -12,9 +11,9 @@ export interface DrawioOptions {
   pageNames?: Partial<Record<DiagramView, string>>;
   hiddenLayers?: string[];
   layout?: LayoutOptions;
-  /** Shapes, line styles and what the hosts cards imply. Default INFRA_PROFILE. */
+  /** Shapes, colours, line styles and what the hosts cards imply. Default: the topology's (`topology.profile`), else INFRA_PROFILE. */
   profile?: DomainProfile;
-  /** Marks failed nodes red and suspects orange. */
+  /** Marks failed nodes red and suspects orange. Default: the `status` the nodes carry. */
   status?: Record<string, NodeStatus>;
   /** Colours; anything left out falls back to DRAWIO_THEME, which suits a white wiki page. */
   theme?: Partial<InfraTheme>;
@@ -44,13 +43,14 @@ const PAGE_NAMES: Record<DiagramView, string> = { layers: 'Layers', hosts: 'Host
  * to its nodes, so the diagram stays editable.
  */
 export function toDrawio(topo: Topology, opts: DrawioOptions = {}): string {
-  const theme = resolveTheme({ ...DRAWIO_THEME, ...opts.theme });
   const views = opts.views ?? ['layers', 'hosts'];
-  const profile = opts.profile ?? INFRA_PROFILE;
+  const profile = opts.profile ?? resolveProfile(topo);
+  const theme = resolveTheme(opts.theme, profile, DRAWIO_THEME);
+  const status = opts.status ?? reportedStatus(topo);
   const pages = views.map((view, i) => {
     const layout = computeDiagramLayout(topo, { view, hiddenLayers: opts.hiddenLayers, layout: { profile, ...opts.layout } });
     const name = opts.pageNames?.[view] ?? PAGE_NAMES[view];
-    return `  <diagram id="infra3d-${view}-${i}" name="${esc(name)}">\n${graphModel(topo, layout, theme, profile, opts.status)}\n  </diagram>`;
+    return `  <diagram id="infra3d-${view}-${i}" name="${esc(name)}">\n${graphModel(topo, layout, theme, profile, status)}\n  </diagram>`;
   });
   return `<mxfile host="infra3d" type="device">\n${pages.join('\n')}\n</mxfile>\n`;
 }

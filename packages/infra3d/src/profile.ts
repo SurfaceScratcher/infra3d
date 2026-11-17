@@ -1,4 +1,5 @@
-import type { EdgeKind, InfraNode } from './types.js';
+import { INFRA_PROFILE } from './infra-profile.js';
+import type { EdgeKind, InfraNode, NodeStatus, Topology } from './types.js';
 
 /**
  * Abstract node shapes. Every renderer (3D, SVG, draw.io) has its own drawing for each,
@@ -13,11 +14,15 @@ export type NodeShape =
   | 'diamond' // e.g. an endpoint
   | 'cylinder'; // e.g. a database
 
+export const NODE_SHAPES: readonly NodeShape[] = ['box', 'wide', 'slab', 'hexagon', 'ring', 'diamond', 'cylinder'];
+
 export interface NodeTypeSpec {
   /** Human-readable name, e.g. "Container". */
   label?: string;
   /** Default: the profile's `defaultShape`. */
   shape?: NodeShape;
+  /** Colour (CSS), used unless the theme sets one for this type. */
+  color?: string;
   /** Bold label, for the nodes that structure a view (e.g. hosts). */
   emphasis?: boolean;
   /** 3D only: the label shows on hover, selection or trouble instead of always (for numerous nodes). */
@@ -29,6 +34,8 @@ export interface EdgeKindSpec {
   label?: [string, string];
   /** Default 'solid'. */
   line?: 'solid' | 'dashed';
+  /** Colour (CSS), used unless the theme sets one for this kind. */
+  color?: string;
   /** Drawn fainter, for edges that are always there and would clutter the view. */
   faint?: boolean;
   /**
@@ -49,7 +56,8 @@ export interface EdgeKindSpec {
 /**
  * Everything domain-specific about a topology: node types, edge kinds, how failures travel and
  * how things look. Plain JSON-compatible data, so a profile can be stored, shared and validated
- * like a topology. Colours stay in the theme (keyed by node type and edge kind).
+ * like a topology, or ship inside one (`topology.profile`). Colours in the profile fill in what the
+ * theme does not set.
  */
 export interface DomainProfile {
   id: string;
@@ -87,3 +95,29 @@ export const proxyKinds = (p: DomainProfile) => kindsWhere(p, (s) => s.proxy);
 /** "routes to" / "reachable via"; the kind itself if the profile has no wording. */
 export const edgeLabel = (p: DomainProfile, kind: EdgeKind, dir: 'out' | 'in') => edgeKindSpec(p, kind).label?.[dir === 'out' ? 0 : 1] ?? kind;
 export const typeLabel = (p: DomainProfile, type: string) => nodeTypeSpec(p, type).label ?? type;
+
+/** Profiles a topology can name in `profile`. */
+export const BUILTIN_PROFILES: Record<string, DomainProfile> = { [INFRA_PROFILE.id]: INFRA_PROFILE };
+
+/**
+ * The profile of a topology: the one it carries, the built-in one it names, or INFRA_PROFILE.
+ * `known` adds profiles an app can resolve by name.
+ */
+export function resolveProfile(topo: Pick<Topology, 'profile'>, known: Record<string, DomainProfile> = {}): DomainProfile {
+  const p = topo.profile;
+  if (p && typeof p === 'object') return p;
+  return (p && (known[p] ?? BUILTIN_PROFILES[p])) || INFRA_PROFILE;
+}
+
+/** Colours the profile defines for its node types and edge kinds. */
+export function profileColors(p: DomainProfile): { nodeColors: Record<string, string>; edgeColors: Record<string, string> } {
+  const pick = (specs: Record<string, { color?: string }>) =>
+    Object.fromEntries(Object.entries(specs).flatMap(([k, s]) => (s.color ? [[k, s.color]] : [])));
+  return { nodeColors: pick(p.nodeTypes), edgeColors: pick(p.edgeKinds) };
+}
+
+/** The `status` the source reported per node, or `undefined` if no node has one. */
+export function reportedStatus(topo: Topology): Record<string, NodeStatus> | undefined {
+  if (!topo.nodes.some((n) => n.status)) return undefined;
+  return Object.fromEntries(topo.nodes.map((n) => [n.id, n.status ?? 'unknown']));
+}

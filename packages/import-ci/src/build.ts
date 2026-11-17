@@ -1,4 +1,5 @@
 import { SCHEMA_VERSION, type InfraEdge, type InfraNode, type NodeStatus, type Topology } from 'infra3d/core';
+import { CI_PROFILE } from './profile.js';
 import type { CiPipeline, CiSnapshot, CiState, CiStep, CiWorkflow } from './types.js';
 
 export interface BuildOptions {
@@ -25,9 +26,9 @@ export function statusOfState(state: CiState | undefined): NodeStatus {
   }
 }
 
-/** Status per node, read back from `meta.State` (so it also works for a saved topology). */
+/** Status per node: the `status` it carries, else derived from `meta.State`. */
 export function statusOf(topology: Topology): Record<string, NodeStatus> {
-  return Object.fromEntries(topology.nodes.map((n) => [n.id, statusOfState(String(n.meta?.State ?? ''))]));
+  return Object.fromEntries(topology.nodes.map((n) => [n.id, n.status ?? statusOfState(String(n.meta?.State ?? ''))]));
 }
 
 /**
@@ -37,6 +38,7 @@ export function statusOf(topology: Topology): Record<string, NodeStatus> {
  * - steps of a workflow without any `dependsOn` run in order: `after` the previous one
  *   (with `dependsOn` in use, steps without it start right after the clone)
  * - step → service of the same workflow: `uses`
+ * The topology carries CI_PROFILE and each node its `status`, so infra3d shows it right away.
  */
 export function buildTopology(snapshot: CiSnapshot, opts: BuildOptions = {}): Topology {
   const nodes: InfraNode[] = [];
@@ -54,6 +56,7 @@ export function buildTopology(snapshot: CiSnapshot, opts: BuildOptions = {}): To
         type: 'pipeline',
         layer: 'pipeline',
         column,
+        status: statusOfState(p.state),
         meta: pipelineMeta(p),
       });
 
@@ -61,7 +64,7 @@ export function buildTopology(snapshot: CiSnapshot, opts: BuildOptions = {}): To
       const byName = new Map(p.workflows.map((w) => [w.name, w]));
       for (const w of p.workflows) {
         const wid = workflowId(w);
-        nodes.push({ id: wid, label: w.name, type: 'workflow', layer: 'workflow', column, meta: runMeta(w) });
+        nodes.push({ id: wid, label: w.name, type: 'workflow', layer: 'workflow', column, status: statusOfState(w.state), meta: runMeta(w) });
         edges.push({ from: pid, to: wid, kind: 'contains' });
         for (const dep of w.dependsOn ?? []) {
           const target = byName.get(dep);
@@ -75,6 +78,7 @@ export function buildTopology(snapshot: CiSnapshot, opts: BuildOptions = {}): To
   return {
     schemaVersion: SCHEMA_VERSION,
     name: opts.name ?? 'CI pipelines',
+    profile: CI_PROFILE,
     layers: LAYERS,
     columns: snapshot.repos.filter((r) => r.pipelines.length).map((r) => r.repo.slug),
     nodes,
@@ -95,7 +99,7 @@ function addSteps(w: CiWorkflow, wid: string, column: string, group: string, nod
   for (const s of w.steps) {
     const id = stepId(s);
     const role = s.kind === 'step' ? undefined : s.kind;
-    nodes.push({ id, label: s.name, type: 'step', layer: 'step', column, group, ...(role && { role }), meta: runMeta(s) });
+    nodes.push({ id, label: s.name, type: 'step', layer: 'step', column, group, ...(role && { role }), status: statusOfState(s.state), meta: runMeta(s) });
     edges.push({ from: wid, to: id, kind: 'runs' });
   }
 

@@ -1,3 +1,5 @@
+import { profileColors, type DomainProfile } from './profile.js';
+
 export interface InfraTheme {
   background: string;
   /** Colour per node type; unknown types use `defaultNodeColor`. */
@@ -61,13 +63,17 @@ export const DEFAULT_THEME: InfraTheme = {
   fontFamily: 'system-ui, sans-serif',
 };
 
-/** Merges a partial theme into the defaults; colour maps are merged key by key. */
-export function resolveTheme(theme: Partial<InfraTheme> = {}): InfraTheme {
+/**
+ * Merges a partial theme into `base` (default DEFAULT_THEME); colour maps are merged key by key.
+ * Colours of the profile come between the two: the theme overrides them, they override the base.
+ */
+export function resolveTheme(theme: Partial<InfraTheme> = {}, profile?: DomainProfile, base: InfraTheme = DEFAULT_THEME): InfraTheme {
+  const fromProfile = profile ? profileColors(profile) : { nodeColors: {}, edgeColors: {} };
   return {
-    ...DEFAULT_THEME,
+    ...base,
     ...theme,
-    nodeColors: { ...DEFAULT_THEME.nodeColors, ...theme.nodeColors },
-    edgeColors: { ...DEFAULT_THEME.edgeColors, ...theme.edgeColors },
+    nodeColors: { ...base.nodeColors, ...fromProfile.nodeColors, ...theme.nodeColors },
+    edgeColors: { ...base.edgeColors, ...fromProfile.edgeColors, ...theme.edgeColors },
   };
 }
 

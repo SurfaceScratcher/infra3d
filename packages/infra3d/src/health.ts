@@ -1,5 +1,5 @@
 import { INFRA_PROFILE } from './infra-profile.js';
-import { proxyKinds as profileProxyKinds, structuralKinds as profileStructuralKinds, type DomainProfile } from './profile.js';
+import { resolveProfile, proxyKinds as profileProxyKinds, structuralKinds as profileStructuralKinds, type DomainProfile } from './profile.js';
 import type { EdgeKind, InfraNode, NodeStatus, Topology } from './types.js';
 
 /**
@@ -22,7 +22,7 @@ export interface CheckResult {
 }
 
 export interface HealthOptions {
-  /** Says which edge kinds are structural and which lead to a proxy. Default INFRA_PROFILE. */
+  /** Says which edge kinds are structural and which lead to a proxy. Default: the topology's (`topology.profile`), else INFRA_PROFILE. */
   profile?: DomainProfile;
   /**
    * Edge kinds that a running service actually needs at runtime; overrides the profile. Loose
@@ -88,7 +88,7 @@ export function dependencyClosure(topo: Topology, start: string, kinds: EdgeKind
 }
 
 export function analyzeHealth(topo: Topology, results: Record<string, CheckResult | undefined>, opts: HealthOptions = {}): HealthAnalysis {
-  const profile = opts.profile ?? INFRA_PROFILE;
+  const profile = opts.profile ?? resolveProfile(topo);
   const { structuralKinds = profileStructuralKinds(profile), proxyKinds = profileProxyKinds(profile) } = opts;
   const out = adjacency(topo, structuralKinds);
   const proxies = adjacency(topo, proxyKinds);

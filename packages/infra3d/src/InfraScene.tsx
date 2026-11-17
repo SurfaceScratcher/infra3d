@@ -5,8 +5,7 @@ import { computeLayout, type LayoutOptions, type Vec3 } from './layout.js';
 import { fitCamera, sceneBox, type CameraAngle, type CameraFit } from './camera.js';
 import { computeHighlight, type Highlight } from './graph.js';
 import type { Mesh } from 'three';
-import { INFRA_PROFILE } from './infra-profile.js';
-import { edgeKindSpec, nodeTypeSpec, shapeOf, type DomainProfile, type NodeShape } from './profile.js';
+import { edgeKindSpec, nodeTypeSpec, reportedStatus, resolveProfile, shapeOf, type DomainProfile, type NodeShape } from './profile.js';
 import { resolveTheme, type InfraTheme } from './theme.js';
 import type { HighlightMode, InfraEdge, InfraNode, NodeStatus, Topology } from './types.js';
 
@@ -16,11 +15,11 @@ export interface InfraSceneProps {
   onSelect?: (id: string | null) => void;
   mode?: HighlightMode;
   hiddenLayers?: string[];
-  /** Node shapes, edge styles and how failures travel. Default INFRA_PROFILE. */
+  /** Node shapes, colours, wording and how failures travel. Default: the topology's (`topology.profile`), else INFRA_PROFILE. */
   profile?: DomainProfile;
   /** Always show all labels, also those the profile shows only on hover or selection (containers, endpoints). */
   showAllLabels?: boolean;
-  /** Live state per node: failed nodes pulse red, suspects are marked orange. */
+  /** Live state per node: failed nodes pulse red, suspects are marked orange. Default: the `status` the nodes carry. */
   status?: Record<string, NodeStatus>;
   /** Colours and fonts; anything left out falls back to DEFAULT_THEME. */
   theme?: Partial<InfraTheme>;
@@ -47,9 +46,9 @@ export function InfraScene({
   onSelect,
   mode = 'both',
   hiddenLayers = [],
-  profile = INFRA_PROFILE,
+  profile: profileProp,
   showAllLabels = false,
-  status,
+  status: statusProp,
   theme: themeOverrides,
   background,
   layout: layoutOpts,
@@ -58,13 +57,16 @@ export function InfraScene({
   style,
   ref,
 }: InfraSceneProps) {
+  const profile = useMemo(() => profileProp ?? resolveProfile(topology), [profileProp, topology]);
+  const reported = useMemo(() => reportedStatus(topology), [topology]);
+  const status = statusProp ?? reported;
   const layout = useMemo(() => computeLayout(topology, { profile, ...layoutOpts }), [topology, profile, layoutOpts]);
   const highlight = useMemo(() => computeHighlight(topology, selectedId, mode, profile), [topology, selectedId, mode, profile]);
   const anchorLayer = layoutOpts?.anchorLayer ?? profile.anchorLayer;
   const hidden = useMemo(() => new Set(hiddenLayers), [hiddenLayers]);
   const nodeById = useMemo(() => new Map(topology.nodes.map((n) => [n.id, n])), [topology]);
   const [hovered, setHovered] = useState<string | null>(null);
-  const theme = useMemo(() => resolveTheme(background ? { ...themeOverrides, background } : themeOverrides), [themeOverrides, background]);
+  const theme = useMemo(() => resolveTheme(background ? { ...themeOverrides, background } : themeOverrides, profile), [themeOverrides, background, profile]);
 
   const visible = (n: InfraNode | undefined) => !!n && !hidden.has(n.layer);
   const { bounds } = layout;

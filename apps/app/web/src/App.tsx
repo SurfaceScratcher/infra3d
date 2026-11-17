@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
-  InfraScene, InfraDiagram, toDrawio, DEFAULT_THEME, NODE_COLORS, DOWN_COLOR, UP_COLOR, STATUS_COLORS,
+  InfraScene, InfraDiagram, toDrawio, DOWN_COLOR, UP_COLOR, STATUS_COLORS,
   analyzeHealth, checkTarget, computeHighlight, dependencyClosure, neighbors, validateTopology,
-  INFRA_PROFILE, edgeLabel as profileEdgeLabel, proxyKinds, typeLabel as profileTypeLabel,
+  edgeLabel, proxyKinds, reportedStatus, resolveProfile, resolveTheme, structuralKinds, typeLabel,
 } from 'infra3d';
-import type { CheckResult, HighlightMode, InfraDiagramHandle, InfraEdge, InfraNode, InfraSceneHandle, NodeType, Topology } from 'infra3d';
+import type { CheckResult, DomainProfile, HighlightMode, InfraDiagramHandle, InfraEdge, InfraNode, InfraSceneHandle, NodeType, Topology } from 'infra3d';
 import { clock, since, useLiveState, type LiveState } from './live';
 
 // Two modes: the static demo (GitHub Pages, `--mode demo`) and the live app served by the infra3d server.
@@ -40,25 +40,75 @@ function download(name: string, type: string, content: string) {
 /** File name from the topology name, e.g. "Homelab & Cloud" -> "homelab-cloud". */
 const fileBase = (t: Topology) => (t.name ?? 'infra3d').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'infra3d';
 
-const PROFILE = INFRA_PROFILE;
-const PROXY_KINDS = proxyKinds(PROFILE);
-const typeLabel = (t: NodeType) => profileTypeLabel(PROFILE, t);
-const edgeLabel = (e: InfraEdge, dir: 0 | 1) => profileEdgeLabel(PROFILE, e.kind, dir ? 'in' : 'out');
-
 /** What outside-in health checks would report if the given nodes were broken. */
-function simulateChecks(topology: Topology, endpoints: InfraNode[], broken: string[]): Record<string, CheckResult> {
+function simulateChecks(topology: Topology, profile: DomainProfile, endpoints: InfraNode[], broken: string[]): Record<string, CheckResult> {
   const failed = new Set(broken);
-  const hit = (id: string) => [...dependencyClosure(topology, id)].some((x) => failed.has(x));
+  const kinds = structuralKinds(profile);
+  const proxy = proxyKinds(profile);
+  const hit = (id: string) => [...dependencyClosure(topology, id, kinds)].some((x) => failed.has(x));
   const results: Record<string, CheckResult> = {};
   for (const n of endpoints) {
-    const proxies = topology.edges.filter((e) => e.from === n.id && PROXY_KINDS.includes(e.kind)).map((e) => e.to);
+    const proxies = topology.edges.filter((e) => e.from === n.id && proxy.includes(e.kind)).map((e) => e.to);
     results[n.id] = { ok: !hit(n.id), answered: proxies.length > 0 && !proxies.some(hit) };
   }
   return results;
 }
 
+/** A topology file the user opened in the browser; it never leaves the browser. */
+interface OpenedFile { name: string; topology: Topology; openedAt: number }
+
+interface FileLoader {
+  file: OpenedFile | null;
+  error: string | null;
+  open(file: File): void;
+  close(): void;
+}
+const Files = createContext<FileLoader>({ file: null, error: null, open: () => {}, close: () => {} });
+
+async function readTopology(file: File): Promise<Topology> {
+  let data: unknown;
+  try {
+    data = JSON.parse(await file.text());
+  } catch {
+    throw new Error(`${file.name} is not a JSON file`);
+  }
+  const { valid, errors } = validateTopology(data);
+  if (!valid) throw new Error(`${file.name} is not a valid topology: ${errors.slice(0, 3).join('; ')}${errors.length > 3 ? ' …' : ''}`);
+  return data as Topology;
+}
+
+/** Opens topology files from the file picker or dropped anywhere on the page. */
+function FileProvider({ children }: { children: (file: OpenedFile | null) => ReactNode }) {
+  const [file, setFile] = useState<OpenedFile | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const open = (f: File) => {
+    readTopology(f).then(
+      (topology) => { setFile({ name: f.name, topology, openedAt: Date.now() }); setError(null); },
+      (e: Error) => setError(e.message),
+    );
+  };
+  useEffect(() => {
+    const over = (e: DragEvent) => { if (e.dataTransfer?.types.includes('Files')) e.preventDefault(); };
+    const drop = (e: DragEvent) => {
+      const f = e.dataTransfer?.files[0];
+      if (!f) return;
+      e.preventDefault();
+      open(f);
+    };
+    window.addEventListener('dragover', over);
+    window.addEventListener('drop', drop);
+    return () => { window.removeEventListener('dragover', over); window.removeEventListener('drop', drop); };
+  }, []);
+  const value = useMemo(() => ({ file, error, open, close: () => { setFile(null); setError(null); } }), [file, error]);
+  return <Files.Provider value={value}>{children(file)}</Files.Provider>;
+}
+
 export function App() {
-  return DEMO ? <Demo /> : <Live />;
+  return (
+    <FileProvider>
+      {(file) => (file ? <Explorer key={file.openedAt} topology={file.topology} /> : DEMO ? <Demo /> : <Live />)}
+    </FileProvider>
+  );
 }
 
 /** The demo opens in the middle of an outage, so the point is clear before anyone clicks. */
@@ -123,10 +173,19 @@ function Explorer({ topology, live, busy, onCheckNow, initialBroken = [], intro 
     if (svg) download(`${fileBase(topology)}-${view}.svg`, 'image/svg+xml', svg);
   };
 
+  const files = useContext(Files);
+  const fileInput = useRef<HTMLInputElement>(null);
+  const profile = useMemo(() => resolveProfile(topology), [topology]);
+  const colors = useMemo(() => resolveTheme({}, profile).nodeColors, [profile]);
+  const nodeColor = (t: NodeType) => colors[t] ?? DEFAULT_NODE_COLOR;
   const validation = useMemo(() => validateTopology(topology), [topology]);
   const nodeById = useMemo(() => new Map(topology.nodes.map((n) => [n.id, n])), [topology]);
+  // Only topologies with check targets (infrastructure endpoints) can simulate outside-in checks
   const endpoints = useMemo(() => topology.nodes.filter((n) => checkTarget(n)), [topology]);
-  const highlight = useMemo(() => computeHighlight(topology, selected, mode), [topology, selected, mode]);
+  const canSimulate = endpoints.length > 0;
+  const reported = useMemo(() => reportedStatus(topology), [topology]);
+  const failed = useMemo(() => topology.nodes.filter((n) => reported?.[n.id] === 'down'), [topology, reported]);
+  const highlight = useMemo(() => computeHighlight(topology, selected, mode, profile), [topology, selected, mode, profile]);
   const node = selected ? nodeById.get(selected) : undefined;
   const nb = selected ? neighbors(topology, selected) : null;
   const label = (id: string) => nodeById.get(id)?.label ?? id;
@@ -141,10 +200,10 @@ function Explorer({ topology, live, busy, onCheckNow, initialBroken = [], intro 
 
   // A running simulation takes precedence over the live state
   const simulation = useMemo(
-    () => (broken.length ? analyzeHealth(topology, simulateChecks(topology, endpoints, broken)) : null),
-    [topology, endpoints, broken],
+    () => (broken.length && canSimulate ? analyzeHealth(topology, simulateChecks(topology, profile, endpoints, broken), { profile }) : null),
+    [topology, profile, endpoints, broken, canSimulate],
   );
-  const status = simulation?.status ?? live?.status;
+  const status = simulation?.status ?? live?.status ?? reported;
   const toggleBroken = (id: string) => setBroken((b) => (b.includes(id) ? b.filter((x) => x !== id) : [...b, id]));
   const toggleLayer = (id: string) => setHiddenLayers((h) => (h.includes(id) ? h.filter((x) => x !== id) : [...h, id]));
 
@@ -159,6 +218,30 @@ function Explorer({ topology, live, busy, onCheckNow, initialBroken = [], intro 
           <h1>infra3d</h1>
           <p className="muted">{topology.name} · {topology.nodes.length} nodes · {topology.edges.length} connections</p>
         </header>
+
+        {files.error && <section className="invalid"><p>{files.error}</p></section>}
+        {files.file && (
+          <section className="opened">
+            <p className="small">
+              Showing <b>{files.file.name}</b>{profile.id !== 'infra' ? ` · ${profile.label}` : ''}. The file stays in your browser.
+            </p>
+            <button className="action" onClick={files.close}>{DEMO ? 'Back to the example' : 'Back to live view'}</button>
+          </section>
+        )}
+
+        {!live && failed.length > 0 && !simulation && (
+          <section className="live bad">
+            <strong>{failed.length} failed</strong>
+            <ul className="problems">
+              {failed.slice(0, 8).map((n) => (
+                <li key={n.id}>
+                  <button className="link strong" onClick={() => setSelected(n.id)}>{n.label}</button>
+                  <span className="muted small"> {typeLabel(profile, n.type)}{n.column ? ` · ${n.column}` : ''}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         {!validation.valid && (
           <section className="invalid">
@@ -232,7 +315,7 @@ function Explorer({ topology, live, busy, onCheckNow, initialBroken = [], intro 
                 <ul className="edges">
                   {simulation.causes.slice(0, 4).map((c) => (
                     <li key={c.id}>
-                      <button onClick={() => setSelected(c.id)}><Dot type={nodeById.get(c.id)!.type} /> {label(c.id)}</button>
+                      <button onClick={() => setSelected(c.id)}><Dot color={nodeColor(nodeById.get(c.id)!.type)} /> {label(c.id)}</button>
                       <span className="muted"> explains {c.count}</span>
                     </li>
                   ))}
@@ -246,13 +329,13 @@ function Explorer({ topology, live, busy, onCheckNow, initialBroken = [], intro 
         )}
 
         <section>
-          <input className="search" placeholder="Search: api, proxy, homelab …" value={query} onChange={(e) => setQuery(e.target.value)} />
+          <input className="search" placeholder={profile.id === 'infra' ? 'Search: api, proxy, homelab …' : 'Search …'} value={query} onChange={(e) => setQuery(e.target.value)} />
           {results.length > 0 && (
             <ul className="results">
               {results.map((n) => (
                 <li key={n.id}>
                   <button onClick={() => { setSelected(n.id); setQuery(''); }}>
-                    <Dot type={n.type} /> {n.label} <span className="muted">{n.group ?? n.column ?? ''}</span>
+                    <Dot color={nodeColor(n.type)} /> {n.label} <span className="muted">{n.group ?? n.column ?? ''}</span>
                   </button>
                 </li>
               ))}
@@ -288,8 +371,8 @@ function Explorer({ topology, live, busy, onCheckNow, initialBroken = [], intro 
 
         {node && nb ? (
           <section className="details">
-            <h2><Dot type={node.type} /> {node.label}</h2>
-            <p className="muted">{typeLabel(node.type)}{status?.[node.id] ? ` · ${status[node.id]}` : ''}{node.column ? ` · ${node.column}` : ''}</p>
+            <h2><Dot color={nodeColor(node.type)} /> {node.label}</h2>
+            <p className="muted">{typeLabel(profile, node.type)}{status?.[node.id] ? ` · ${status[node.id]}` : ''}{node.column ? ` · ${node.column}` : ''}</p>
             {check && (
               <p className="small">
                 {check.target} · {check.ok ? `${check.ms} ms` : check.error ?? 'not checked yet'}{check.since ? ` · ${since(check.since)}` : ''}
@@ -298,7 +381,7 @@ function Explorer({ topology, live, busy, onCheckNow, initialBroken = [], intro 
             {node.meta && (
               <dl>
                 {Object.entries(node.meta).map(([k, v]) => (
-                  <div key={k}><dt>{k}</dt><dd>{String(v).startsWith('https://') ? <a href={String(v)} target="_blank" rel="noreferrer">{v}</a> : v}</dd></div>
+                  <div key={k}><dt>{k}</dt><dd>{/^https?:\/\//.test(String(v)) ? <a href={String(v)} target="_blank" rel="noreferrer">{v}</a> : v}</dd></div>
                 ))}
               </dl>
             )}
@@ -308,26 +391,29 @@ function Explorer({ topology, live, busy, onCheckNow, initialBroken = [], intro 
                 <span style={{ color: UP_COLOR }}>affects {highlight.up.nodes.size - 1}</span>
               </p>
             )}
-            <EdgeList title="Depends on" edges={nb.outgoing} dir={0} nodeById={nodeById} onPick={setSelected} />
-            <EdgeList title="Used by" edges={nb.incoming} dir={1} nodeById={nodeById} onPick={setSelected} />
+            <EdgeList title="Depends on" edges={nb.outgoing} dir={0} nodeById={nodeById} profile={profile} nodeColor={nodeColor} onPick={setSelected} />
+            <EdgeList title="Used by" edges={nb.incoming} dir={1} nodeById={nodeById} profile={profile} nodeColor={nodeColor} onPick={setSelected} />
             <div className="actions">
-              <button className="action" onClick={() => toggleBroken(node.id)}>
-                {broken.includes(node.id) ? 'Repair this node' : 'Simulate failure here'}
-              </button>
+              {canSimulate && (
+                <button className="action" onClick={() => toggleBroken(node.id)}>
+                  {broken.includes(node.id) ? 'Repair this node' : 'Simulate failure here'}
+                </button>
+              )}
               <button className="clear" onClick={() => setSelected(null)}>Clear selection</button>
             </div>
           </section>
         ) : (
           <section className="hint muted">
-            Click a node to see what it <b>needs</b> and what is <b>affected</b> when it fails,
-            or simulate a failure and watch the health analysis narrow down the cause.
+            Click a node to see what it <b>needs</b> and what is <b>affected</b> when it fails
+            {canSimulate ? ', or simulate a failure and watch the health analysis narrow down the cause.' : '.'}
+            {' '}Drop a topology file here to open it.
             {' '}{view === '3d' ? 'Drag to rotate, right-drag to pan, scroll to zoom.' : 'Drag to pan, scroll or pinch to zoom, Tab and Enter to pick a node.'}
           </section>
         )}
 
         <section className="types">
-          {Object.keys(PROFILE.nodeTypes).map((t) => (
-            <span key={t}><Dot type={t} /> {typeLabel(t)}</span>
+          {Object.keys(profile.nodeTypes).map((t) => (
+            <span key={t}><Dot color={nodeColor(t)} /> {typeLabel(profile, t)}</span>
           ))}
           <span><span className="dot" style={{ background: STATUS_COLORS.down }} /> down</span>
           <span><span className="dot" style={{ background: STATUS_COLORS.suspect }} /> suspect</span>
@@ -354,6 +440,8 @@ function Explorer({ topology, live, busy, onCheckNow, initialBroken = [], intro 
             ))}
           </div>
           <div className="tools">
+            <input ref={fileInput} type="file" accept=".json,application/json" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) files.open(f); e.target.value = ''; }} />
+            <button className="tool" onClick={() => fileInput.current?.click()} title="Open a topology file (JSON), e.g. from infra3d-import-ci. It stays in your browser.">Open…</button>
             <button className="tool" onClick={exportDrawio} title="Both 2D diagrams as an editable draw.io file, e.g. for the draw.io macro in XWiki or Confluence">draw.io</button>
             {view !== '3d' && <button className="tool" onClick={exportSvg} title="This diagram as an SVG image">SVG</button>}
             <button className="tool" onClick={() => { setSelected(null); (view === '3d' ? scene : diagram).current?.fitAll(); }}>Show all</button>
@@ -369,7 +457,9 @@ function Explorer({ topology, live, busy, onCheckNow, initialBroken = [], intro 
   );
 }
 
-function EdgeList({ title, edges, dir, nodeById, onPick }: { title: string; edges: InfraEdge[]; dir: 0 | 1; nodeById: Map<string, InfraNode>; onPick: (id: string) => void }) {
+function EdgeList({ title, edges, dir, nodeById, profile, nodeColor, onPick }: {
+  title: string; edges: InfraEdge[]; dir: 0 | 1; nodeById: Map<string, InfraNode>; profile: DomainProfile; nodeColor: (t: NodeType) => string; onPick: (id: string) => void;
+}) {
   if (!edges.length) return null;
   return (
     <>
@@ -379,8 +469,8 @@ function EdgeList({ title, edges, dir, nodeById, onPick }: { title: string; edge
           const other = nodeById.get(dir === 0 ? e.to : e.from)!;
           return (
             <li key={i}>
-              <span className="muted">{edgeLabel(e, dir)}</span>{' '}
-              <button onClick={() => onPick(other.id)}><Dot type={other.type} /> {other.label}</button>
+              <span className="muted">{edgeLabel(profile, e.kind, dir ? 'in' : 'out')}</span>{' '}
+              <button onClick={() => onPick(other.id)}><Dot color={nodeColor(other.type)} /> {other.label}</button>
               <span className="muted">{other.group ? ` · ${other.group}@${other.column}` : ''}{e.label ? ` (${e.label})` : ''}</span>
             </li>
           );
@@ -390,6 +480,8 @@ function EdgeList({ title, edges, dir, nodeById, onPick }: { title: string; edge
   );
 }
 
-function Dot({ type }: { type: NodeType }) {
-  return <span className="dot" style={{ background: NODE_COLORS[type] ?? DEFAULT_THEME.defaultNodeColor }} />;
+const DEFAULT_NODE_COLOR = resolveTheme().defaultNodeColor;
+
+function Dot({ color }: { color: string }) {
+  return <span className="dot" style={{ background: color }} />;
 }

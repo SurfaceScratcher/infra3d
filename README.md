@@ -73,6 +73,18 @@ the app serves at `/api/diagram.svg`. It has a light theme for white pages and s
 
 See [embedding the diagram in a wiki](apps/app#embedding-the-diagram-in-a-wiki) for the token and the options.
 
+## Other domains
+
+The layered view is not tied to infrastructure. A topology can carry a
+[domain profile](packages/infra3d#domain-profiles) that sets its shapes, colours, wording and how
+failures travel, and the app opens such files with *Open…* or drag and drop, in 3D and 2D.
+[`infra3d-import-ci`](packages/import-ci) is the first one: CI pipelines, workflows and steps from
+Woodpecker or Drone, with their `depends_on` links and which step broke the build.
+
+```sh
+DRONE_SERVER=https://drone.example.com DRONE_TOKEN=… npx infra3d-import-ci -o pipelines.json
+```
+
 ## React component
 
 ```bash

@@ -12,6 +12,12 @@ A complete compose file is in [examples/docker-compose.yml](../../examples/docke
 The UI switches between the 3D scene and two 2D diagrams (*Layers*, *Hosts*); *draw.io* and
 *SVG* download the diagram for documentation, see [2D views](../../README.md#2d-views).
 
+*Open…* (or dropping a file on the page) shows any topology file instead, also of other domains:
+a file that carries its [profile](../../packages/infra3d#domain-profiles), such as the output of
+[infra3d-import-ci](../../packages/import-ci), brings its own shapes, colours and wording, and
+the status its nodes report. The file is read in the browser and never sent to the server; the
+health simulation is only offered for topologies with check targets.
+
 ## How it works
 
 1. Every interval the server reads the topology: it imports the compose files below `/stacks`

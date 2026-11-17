@@ -1,5 +1,4 @@
-import { INFRA_PROFILE } from './infra-profile.js';
-import { propagates, type DomainProfile } from './profile.js';
+import { propagates, resolveProfile, type DomainProfile } from './profile.js';
 import type { HighlightMode, Topology } from './types.js';
 
 export interface Reach {
@@ -12,7 +11,7 @@ export interface Reach {
  * 'up':   everything that fails when `start` fails (edges backward).
  * Edges the profile marks as not propagating are followed for one step only.
  */
-export function traverse(topo: Topology, start: string, dir: 'down' | 'up', profile: DomainProfile = INFRA_PROFILE): Reach {
+export function traverse(topo: Topology, start: string, dir: 'down' | 'up', profile: DomainProfile = resolveProfile(topo)): Reach {
   const out = new Map<string, number[]>();
   topo.edges.forEach((e, i) => {
     const key = dir === 'down' ? e.from : e.to;
@@ -42,7 +41,7 @@ export interface Highlight {
   up: Reach;
 }
 
-export function computeHighlight(topo: Topology, selected: string | null | undefined, mode: HighlightMode, profile: DomainProfile = INFRA_PROFILE): Highlight | null {
+export function computeHighlight(topo: Topology, selected: string | null | undefined, mode: HighlightMode, profile: DomainProfile = resolveProfile(topo)): Highlight | null {
   if (!selected) return null;
   const empty: Reach = { nodes: new Set([selected]), edges: new Set() };
   return {

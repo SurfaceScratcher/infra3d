@@ -3,8 +3,7 @@ import { computeDiagramLayout, shortenLabel, DIAGRAM_NODE_RADIUS as R, type Diag
 import { computeHighlight, type Highlight } from './graph.js';
 import { resolveTheme, type InfraTheme } from './theme.js';
 import type { LayoutOptions } from './layout.js';
-import { INFRA_PROFILE } from './infra-profile.js';
-import { edgeKindSpec, nodeTypeSpec, shapeOf, type DomainProfile, type NodeShape } from './profile.js';
+import { edgeKindSpec, nodeTypeSpec, reportedStatus, resolveProfile, shapeOf, type DomainProfile, type NodeShape } from './profile.js';
 import type { HighlightMode, InfraEdge, InfraNode, NodeStatus, Topology } from './types.js';
 
 export interface InfraDiagramProps {
@@ -15,9 +14,9 @@ export interface InfraDiagramProps {
   onSelect?: (id: string | null) => void;
   mode?: HighlightMode;
   hiddenLayers?: string[];
-  /** Node shapes, edge styles and how failures travel. Default INFRA_PROFILE. */
+  /** Node shapes, colours, wording and how failures travel. Default: the topology's (`topology.profile`), else INFRA_PROFILE. */
   profile?: DomainProfile;
-  /** Live state per node: failed nodes pulse red, suspects are marked orange. */
+  /** Live state per node: failed nodes pulse red, suspects are marked orange. Default: the `status` the nodes carry. */
   status?: Record<string, NodeStatus>;
   theme?: Partial<InfraTheme>;
   /** Shortcut for `theme.background`. */
@@ -47,8 +46,8 @@ export function InfraDiagram({
   onSelect,
   mode = 'both',
   hiddenLayers = NO_LAYERS,
-  profile = INFRA_PROFILE,
-  status,
+  profile: profileProp,
+  status: statusProp,
   theme: themeOverrides,
   background,
   layout: layoutOpts,
@@ -56,9 +55,12 @@ export function InfraDiagram({
   style,
   ref,
 }: InfraDiagramProps) {
+  const profile = useMemo(() => profileProp ?? resolveProfile(topology), [profileProp, topology]);
+  const reported = useMemo(() => reportedStatus(topology), [topology]);
+  const status = statusProp ?? reported;
   const layout = useMemo(() => computeDiagramLayout(topology, { view, hiddenLayers, layout: { profile, ...layoutOpts } }), [topology, view, hiddenLayers, profile, layoutOpts]);
   const highlight = useMemo(() => computeHighlight(topology, selectedId, mode, profile), [topology, selectedId, mode, profile]);
-  const theme = useMemo(() => resolveTheme(background ? { ...themeOverrides, background } : themeOverrides), [themeOverrides, background]);
+  const theme = useMemo(() => resolveTheme(background ? { ...themeOverrides, background } : themeOverrides, profile), [themeOverrides, background, profile]);
   const nodeById = useMemo(() => new Map(topology.nodes.map((n) => [n.id, n])), [topology]);
   const cardOf = useMemo(() => cardIndex(layout), [layout]);
   const [hovered, setHovered] = useState<string | null>(null);

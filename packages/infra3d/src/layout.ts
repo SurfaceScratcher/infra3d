@@ -1,11 +1,10 @@
-import { INFRA_PROFILE } from './infra-profile.js';
-import { edgeKindSpec, type DomainProfile } from './profile.js';
+import { edgeKindSpec, resolveProfile, type DomainProfile } from './profile.js';
 import type { InfraNode, Topology } from './types.js';
 
 export type Vec3 = [number, number, number];
 
 export interface LayoutOptions {
-  /** Anchor layer and edge pulls come from here. Default INFRA_PROFILE. */
+  /** Anchor layer and edge pulls come from here. Default: the topology's (`topology.profile`), else INFRA_PROFILE. */
   profile?: DomainProfile;
   /** Layer whose nodes are placed on a grid; all other layers follow from it. Default: the profile's. */
   anchorLayer?: string;
@@ -24,7 +23,7 @@ export interface Layout {
 }
 
 export function computeLayout(topo: Topology, opts: LayoutOptions = {}): Layout {
-  const profile = opts.profile ?? INFRA_PROFILE;
+  const profile = opts.profile ?? resolveProfile(topo);
   const { anchorLayer = profile.anchorLayer, layerGap = 10, itemGap = 3.2, groupGap = 3.5, columnGap = 9, minDistance = 2.6 } = opts;
 
   const layerY = new Map(topo.layers.map((l, i) => [l.id, i * layerGap]));
