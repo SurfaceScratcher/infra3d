@@ -12,6 +12,8 @@ export const CI_PROFILE: DomainProfile = {
   label: 'CI pipelines',
   // Steps are the most numerous; grouped by workflow they form the grid the rest follows
   anchorLayer: 'step',
+  // One workflow per group: side by side, so the workflows above them line up across
+  anchorGroups: 'columns',
   nodeTypes: {
     pipeline: { label: 'Pipeline', shape: 'wide', emphasis: true, color: '#f7bc94' },
     workflow: { label: 'Workflow', shape: 'hexagon', color: '#cbb6f3' },
@@ -26,7 +28,8 @@ export const CI_PROFILE: DomainProfile = {
     contains: { label: ['consists of', 'part of'], structural: true, pull: 1, color: '#a7a4bb' },
     // The workflow's box around its steps already shows this
     runs: { label: ['runs', 'step of'], structural: true, pull: 1, impliedByColumn: true, color: '#a7a4bb' },
-    needs: { label: ['needs', 'needed by'], structural: true, pull: 0.5, color: '#cbb6f3' },
+    // No pull: a workflow stays above its own steps instead of drifting towards the ones it needs
+    needs: { label: ['needs', 'needed by'], structural: true, color: '#cbb6f3' },
     // Steps without `depends_on` run one after another
     after: { label: ['runs after', 'runs before'], line: 'dashed', structural: true, pull: 0.5, color: '#97d7df' },
     uses: { label: ['uses service', 'serves'], line: 'dashed', faint: true, pull: 0.3, color: '#f2b3d9' },

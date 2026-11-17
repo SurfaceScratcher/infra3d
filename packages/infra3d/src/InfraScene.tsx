@@ -95,7 +95,7 @@ export function InfraScene({
 
           {topology.layers.map((l) =>
             hidden.has(l.id) ? null : (
-              <LayerPlane key={l.id} theme={theme} label={l.label} y={layout.layerY.get(l.id)!} bounds={bounds} columns={l.id === anchorLayer ? layout.columns : []} />
+              <LayerPlane key={l.id} theme={theme} label={l.label} y={layout.layerY.get(l.id)!} bounds={bounds} columns={l.id === anchorLayer ? layout.columns : []} columnLabelsInFront={layout.anchorGroups === 'columns'} />
             ),
           )}
 
@@ -215,7 +215,12 @@ function CameraRig({ selectedPos, fit, fitAll }: { selectedPos?: Vec3; fit: Came
   );
 }
 
-function LayerPlane({ theme, label, y, bounds, columns }: { theme: InfraTheme; label: string; y: number; bounds: { minX: number; maxX: number; minZ: number; maxZ: number }; columns: { id: string; x: number; width: number; depth: number }[] }) {
+function LayerPlane({ theme, label, y, bounds, columns, columnLabelsInFront }: {
+  theme: InfraTheme; label: string; y: number; bounds: { minX: number; maxX: number; minZ: number; maxZ: number };
+  columns: { id: string; x: number; width: number; depth: number }[];
+  /** Behind the column, a label can line up with the nodes above it; in front it stays clear. */
+  columnLabelsInFront?: boolean;
+}) {
   const pad = 6;
   const w = bounds.maxX - bounds.minX + pad * 2;
   const d = bounds.maxZ - bounds.minZ + pad * 2;
@@ -237,7 +242,7 @@ function LayerPlane({ theme, label, y, bounds, columns }: { theme: InfraTheme; l
             <planeGeometry args={[c.width + 3, c.depth + 3]} />
             <meshBasicMaterial color={theme.column} transparent opacity={0.35} depthWrite={false} />
           </mesh>
-          <Label position={[c.x, 0, -c.depth / 2 - 2.5]} center style={{ pointerEvents: 'none' }}>
+          <Label position={[c.x, 0, columnLabelsInFront ? c.depth / 2 + 2.5 : -c.depth / 2 - 2.5]} center style={{ pointerEvents: 'none' }}>
             <div style={{ ...columnLabelStyle, color: theme.columnLabel, fontFamily: theme.fontFamily }}>{c.id}</div>
           </Label>
         </group>

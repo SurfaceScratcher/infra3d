@@ -210,6 +210,11 @@ the SVG and draw.io each draw them their own way. `roles` override the shape by 
 `database` → `cylinder` does for infrastructure. Node types and edge kinds can bring a `color`; the
 theme overrides it (`resolveTheme(theme, profile)`).
 
+In 3D, the anchor layer is a grid per column with one row per `group`, rows one behind the other.
+`anchorGroups: 'columns'` puts the groups side by side instead. Use it when each group has its own
+node in the layer above (a CI workflow over its steps): those nodes then line up from left to
+right instead of hiding behind each other. `layout.anchorGroups` overrides the profile.
+
 **A topology can carry its profile** in `topology.profile`, so the data explains itself: every
 function and component then uses it without being told. `resolveProfile(topology)` returns the profile in effect (the carried one, a
 built-in one by name, else `INFRA_PROFILE`); `validateTopology` checks carried profiles too, and

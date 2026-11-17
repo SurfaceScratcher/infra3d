@@ -131,4 +131,5 @@ function checkProfile(p: unknown, layers: unknown[], errors: string[], warnings:
     else for (const [name, spec] of Object.entries(p.roles)) shape(isObject(spec) ? spec.shape : spec, `profile role "${name}"`);
   }
   shape(p.defaultShape, 'profile defaultShape');
+  if (p.anchorGroups !== undefined && p.anchorGroups !== 'rows' && p.anchorGroups !== 'columns') errors.push('profile: "anchorGroups" must be "rows" or "columns"');
 }

@@ -64,6 +64,12 @@ export interface DomainProfile {
   label: string;
   /** Layer whose nodes are placed on a grid per column and group; all other layers follow from it. */
   anchorLayer: string;
+  /**
+   * 3D: the groups of the anchor layer one behind the other (`rows`, default) or side by side
+   * (`columns`). Use `columns` when every group has its own node in the layer above (a workflow
+   * over its steps), so those nodes line up across instead of hiding behind each other.
+   */
+  anchorGroups?: 'rows' | 'columns';
   nodeTypes: Record<string, NodeTypeSpec>;
   /** Shape overrides by `node.role`, e.g. `database` → cylinder. They win over the node type. */
   roles?: Record<string, { shape: NodeShape }>;
