@@ -30,7 +30,7 @@ jobs:
           cache: npm
           registry-url: https://registry.npmjs.org
       - run: npm ci
-      - run: npm run build -w infra3d -w infra3d-import-compose
+      - run: npm run build -w infra3d -w infra3d-import-compose -w infra3d-import-ci
       # Node 24 ships npm 11, which supports trusted publishing
       - uses: changesets/action@v2
         id: changesets

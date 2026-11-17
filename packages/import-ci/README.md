@@ -5,8 +5,9 @@ as a layered graph: pipelines on top, workflows (Drone: stages) below them, step
 with the `depends_on` links between workflows and between steps. Click a failed step to see what
 it blocked, or a red pipeline to see why it failed.
 
-> Experimental and not published to npm yet. It is the second domain next to infrastructure and
-> tests the [domain profiles](../infra3d#domain-profiles) of infra3d.
+> Experimental. It is the second domain next to infrastructure and builds on the
+> [domain profiles](../infra3d#domain-profiles) of infra3d. Tried against a real Drone server;
+> Woodpecker is covered by tests only so far.
 
 ![Hosts view of two repositories](../../docs/ci-hosts.png)
 
