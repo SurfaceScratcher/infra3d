@@ -99,6 +99,23 @@ describe('a custom profile', () => {
     expect(computeDiagramLayout(ci, { view: 'hosts', layout: { profile: CI, anchorLayer: 'step' } }).groups).toHaveLength(0);
   });
 
+  it('lays the anchor groups out side by side with anchorGroups: columns', () => {
+    const ids = ['w:build', 'w:test', 'w:deploy'];
+    const rows = computeLayout(ci, { profile: CI });
+    const cols = computeLayout(ci, { profile: { ...CI, anchorGroups: 'columns' } });
+    expect(rows.anchorGroups).toBe('rows');
+    expect(cols.anchorGroups).toBe('columns');
+    // Rows: one behind the other (same x); columns: next to each other (same z)
+    expect(new Set(ids.map((id) => rows.positions.get(id)![0])).size).toBe(1);
+    expect(new Set(ids.map((id) => cols.positions.get(id)![2])).size).toBe(1);
+    const xs = ids.map((id) => cols.positions.get(id)![0]);
+    expect(xs).toEqual([...xs].sort((a, b) => a - b));
+    expect(xs[1] - xs[0]).toBeGreaterThan(3.5);
+    // The option overrides the profile
+    expect(computeLayout(ci, { profile: { ...CI, anchorGroups: 'columns' }, anchorGroups: 'rows' }).anchorGroups).toBe('rows');
+    expect(validateTopology({ ...ci, profile: { ...CI, anchorGroups: 'diagonal' } }).errors).toContain('profile: "anchorGroups" must be "rows" or "columns"');
+  });
+
   it('draws its shapes and line styles in SVG and draw.io', () => {
     const svg = toSvg(ci, { view: 'layers', profile: CI });
     expect(svg).toContain('<polygon points="0,-10 10,0 0,10 -10,0"'); // step: diamond

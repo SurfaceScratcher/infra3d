@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeHighlight, toDrawio, toSvg, traverse, validateTopology } from 'infra3d/core';
+import { computeHighlight, computeLayout, toDrawio, toSvg, traverse, validateTopology } from 'infra3d/core';
 import { buildTopology, CI_PROFILE, formatDuration, statusOf } from '../src/index.js';
 import { woodpeckerSnapshot } from './fixtures.js';
 
@@ -86,6 +86,15 @@ describe('CI_PROFILE', () => {
     const up = computeHighlight(topo, T(5), 'impact', CI_PROFILE)!.up.nodes;
     expect([...up]).toEqual(expect.arrayContaining([T(6), `w:${P}/test`, `w:${P}/deploy`, `p:${P}`]));
     expect(up.has(T(3))).toBe(false); // lint does not depend on integration
+  });
+
+  it('puts the workflows side by side in 3D, each above its steps', () => {
+    const layout = computeLayout(topo);
+    const x = (id: string) => layout.positions.get(id)![0];
+    const workflows = ['build', 'test', 'deploy'].map((w) => x(`w:${P}/${w}`));
+    expect(new Set(workflows.map((v) => v.toFixed(1))).size).toBe(3);
+    // Above the column of its own steps, not pulled towards the workflows it needs
+    for (const w of ['build', 'test', 'deploy']) expect(x(`w:${P}/${w}`)).toBeCloseTo(x(`s:${P}/${w}/1`), 5);
   });
 
   it('renders as SVG and draw.io with its shapes', () => {

@@ -229,6 +229,13 @@
           "type": "string",
           "minLength": 1
         },
+        "anchorGroups": {
+          "description": "3D: groups of the anchor layer one behind the other (rows, default) or side by side (columns).",
+          "enum": [
+            "rows",
+            "columns"
+          ]
+        },
         "nodeTypes": {
           "type": "object",
           "additionalProperties": {
