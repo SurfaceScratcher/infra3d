@@ -56,6 +56,12 @@ const slugOf = (r: DroneRepo) => r.slug ?? `${r.namespace}/${r.name}`;
 // Drone reports 0 for times that have not happened yet
 const time = (t?: number) => t || undefined;
 
+/** The branch the code comes from: for a pull request its source branch, not the target. */
+function branchOf(b: DroneBuild): string | undefined {
+  if (b.ref?.startsWith('refs/heads/')) return b.ref.slice('refs/heads/'.length);
+  return b.event === 'pull_request' ? b.source ?? b.target : b.target;
+}
+
 /** Drone's API → the neutral model. `server` is the base URL for links into the web UI. */
 export function fromDrone(server: string | undefined, slug: string, b: DroneBuild): CiPipeline {
   const base = server ? `${server.replace(/\/+$/, '')}/${slug}/${b.number}` : undefined;
@@ -63,7 +69,7 @@ export function fromDrone(server: string | undefined, slug: string, b: DroneBuil
     number: b.number,
     state: b.status,
     event: b.event,
-    branch: b.ref?.startsWith('refs/heads/') ? b.ref.slice('refs/heads/'.length) : b.target,
+    branch: branchOf(b),
     commit: b.after,
     message: b.message,
     author: b.author_login,

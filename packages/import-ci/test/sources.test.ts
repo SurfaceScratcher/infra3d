@@ -40,6 +40,8 @@ describe('drone', () => {
     const test = p.workflows.find((w) => w.name === 'test')!;
     expect(test.steps.map((s) => s.kind)).toEqual(['service', 'clone', 'step', 'step', 'step', 'step']);
     expect(test.steps[4]).toMatchObject({ name: 'integration', exitCode: 1, link: `${SERVER}/acme/shop/42/2/5` });
+    // A pull request is named after its source branch, not the branch it targets
+    expect(fromDrone(SERVER, 'acme/shop', { ...build, event: 'pull_request', ref: 'refs/pull/7/head', source: 'feature', target: 'main' }).branch).toBe('feature');
     // Drone sends 0 for times that have not happened
     expect(test.started).toBeUndefined();
   });
