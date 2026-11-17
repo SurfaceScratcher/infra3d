@@ -1,5 +1,26 @@
 # @infra3d/app
 
+## 0.6.0
+
+### Minor Changes
+
+- 1082af4: Two 2D views of the topology and a draw.io export.
+  
+  - `<InfraDiagram view="layers" | "hosts">` draws the topology as an SVG diagram with the same selection, highlighting and status as the 3D scene. `infra3d/diagram` provides it without three.js.
+  - `toDrawio(topology)` writes both views as an editable draw.io file, e.g. for the draw.io macro in XWiki or Confluence. `computeDiagramLayout` is the pure layout behind them.
+  - The app switches between 3D, Layers and Hosts and downloads the diagrams as draw.io or SVG.
+- c3d3823: Live diagrams for wikis.
+  
+  - `toSvg(topology, { view })` in `infra3d/core` renders a 2D view as a standalone SVG without a browser.
+  - The app serves the current diagram with live status at `/api/diagram.svg` and `/api/diagram.drawio`. `INFRA3D_EMBED_TOKEN` opens only these two endpoints to `?token=…`, so a wiki page can embed the picture while the rest stays behind `INFRA3D_AUTH`.
+
+### Patch Changes
+
+- Updated dependencies [1082af4]
+- Updated dependencies [c3d3823]
+  - infra3d@0.5.0
+  - infra3d-import-compose@0.3.2
+
 ## 0.5.1
 
 ### Patch Changes
