@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { validateTopology } from '../src/validate.js';
+import { validateTopology } from '../src/core.js';
 import example from '../../../apps/app/web/src/data/example.json';
 import { topo } from './fixture.js';
 

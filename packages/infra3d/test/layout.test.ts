@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeLayout } from '../src/layout.js';
+import { computeLayout } from '../src/core.js';
 import { topo } from './fixture.js';
 
 describe('computeLayout', () => {

@@ -173,62 +173,34 @@ override single lists. `checkTarget(node)` returns `node.check` or `meta.URL`.
 Tip for Traefik: a 404 with the exact body `404 page not found` means no router matched,
 which usually means the container is gone. Count it as a failure with `answered: true`.
 
-## Domain profiles
+## Built on stratoscope
 
-Everything specific to infrastructure lives in one plain, JSON-compatible object, `INFRA_PROFILE`:
-the node types with their shapes, the edge kinds with their wording and line style, which edges
-pass a failure on, which ones are structural for the health analysis, and the anchor layer of the
-layout. Every function and component takes a `profile` (`toSvg`, `toDrawio`, `analyzeHealth` as an
-option, `computeLayout` and `computeDiagramLayout` through `layout.profile`, `traverse` and
-`computeHighlight` as the last argument) and defaults to `INFRA_PROFILE`.
+infra3d is [stratoscope](https://github.com/SurfaceScratcher/stratoscope) with infrastructure as
+the domain. Everything specific to infrastructure lives in one plain, JSON-compatible
+[domain profile](https://github.com/SurfaceScratcher/stratoscope/tree/main/packages/stratoscope#domain-profiles),
+`INFRA_PROFILE`: the node types with their shapes and colours, the edge kinds with their wording
+and line style, which edges pass a failure on, which ones are structural for the health analysis,
+and the anchor layer of the layout.
 
-```ts
-import type { DomainProfile } from 'infra3d/core';
+What infra3d adds on top of stratoscope:
 
-const CI: DomainProfile = {
-  id: 'ci',
-  label: 'CI pipelines',
-  anchorLayer: 'workflow',
-  nodeTypes: {
-    pipeline: { label: 'Pipeline', shape: 'wide', emphasis: true },
-    workflow: { label: 'Workflow', shape: 'hexagon' },
-    step: { label: 'Step', shape: 'diamond' },
-  },
-  edgeKinds: {
-    contains: { label: ['contains', 'part of'], structural: true, pull: 1, impliedByColumn: true },
-    needs: { label: ['needs', 'needed by'], structural: true },
-    // A failing notification blocks nothing
-    notifies: { line: 'dashed', faint: true, propagates: false },
-  },
-};
+- Every function and component uses `INFRA_PROFILE` when the topology carries no profile or names
+  `"infra"`. A topology that carries another profile is drawn with that one.
+- The infrastructure names: `<InfraScene>` and `<InfraDiagram>` (stratoscope's `<Scene>` and
+  `<Diagram>`), `InfraNode`, `InfraEdge`, `InfraLayer` and `InfraTheme`, the view `hosts` for
+  stratoscope's `columns`, and `DEFAULT_THEME`, `DRAWIO_THEME`, `NODE_COLORS`, `EDGE_COLORS` with
+  the infrastructure colours.
 
-<InfraDiagram topology={pipelines} profile={CI} view="hosts" />
-```
+For another domain (CI pipelines, tasks, teams), use stratoscope directly with its own profile, for
+example [stratoscope-ci](https://github.com/SurfaceScratcher/stratoscope/tree/main/connectors/ci)
+for Woodpecker and Drone.
 
-Shapes are abstract (`box`, `wide`, `slab`, `hexagon`, `ring`, `diamond`, `cylinder`); the 3D scene,
-the SVG and draw.io each draw them their own way. `roles` override the shape by `node.role`, as
-`database` → `cylinder` does for infrastructure. Node types and edge kinds can bring a `color`; the
-theme overrides it (`resolveTheme(theme, profile)`).
-
-In 3D, the anchor layer is a grid per column with one row per `group`, rows one behind the other.
-`anchorGroups: 'columns'` puts the groups side by side instead. Use it when each group has its own
-node in the layer above (a CI workflow over its steps): those nodes then line up from left to
-right instead of hiding behind each other. `layout.anchorGroups` overrides the profile.
-
-**A topology can carry its profile** in `topology.profile`, so the data explains itself: every
-function and component then uses it without being told. `resolveProfile(topology)` returns the profile in effect (the carried one, a
-built-in one by name, else `INFRA_PROFILE`); `validateTopology` checks carried profiles too, and
-`reportedStatus(topology)` collects the `status` the nodes carry, which the components and exports
-also use when no `status` is passed.
-
-```json
-{ "name": "CI", "profile": { "id": "ci", "label": "CI pipelines", "anchorLayer": "step", "nodeTypes": { … }, "edgeKinds": { … } }, "layers": [ … ], … }
-``` `typeLabel(profile, type)` and `edgeLabel(profile, kind, 'out' | 'in')` give the wording
-for legends and detail panels.
+`typeLabel(profile, type)` and `edgeLabel(profile, kind, 'out' | 'in')` give the wording for
+legends and detail panels; `resolveProfile(topology)` returns the profile in effect.
 
 ## Other exports
 
-`INFRA_PROFILE`, `BUILTIN_PROFILES` and the profile helpers (`resolveProfile`, `reportedStatus`, `profileColors`, `shapeOf`, `typeLabel`, `edgeLabel`, `structuralKinds`, `proxyKinds`, …), `computeLayout`, `fitCamera` / `sceneBox` (the overview camera as a pure function), `traverse`, `computeHighlight`, `neighbors`, `dependencyClosure`,
+`INFRA_PROFILE`, `BUILTIN_PROFILES`, `infraTopology` (the topology with its profile resolved, for stratoscope functions) and the profile helpers (`resolveProfile`, `reportedStatus`, `profileColors`, `shapeOf`, `typeLabel`, `edgeLabel`, `structuralKinds`, `proxyKinds`, …), `computeLayout`, `fitCamera` / `sceneBox` (the overview camera as a pure function), `traverse`, `computeHighlight`, `neighbors`, `dependencyClosure`,
 `DEFAULT_THEME`, `resolveTheme`, and the colour constants `NODE_COLORS`, `EDGE_COLORS`,
 `STATUS_COLORS`, `DOWN_COLOR`, `UP_COLOR` for building legends, and `computeDiagramLayout`,
 `toDrawio`, `toSvg` and `DRAWIO_THEME` for the 2D views. Everything except the two components is also
