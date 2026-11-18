@@ -1,5 +1,12 @@
 # infra3d-import-compose
 
+## 0.3.6
+
+### Patch Changes
+
+- Updated dependencies [591ff41]
+  - infra3d@0.9.0
+
 ## 0.3.5
 
 ### Patch Changes
