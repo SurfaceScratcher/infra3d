@@ -24,8 +24,8 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - run: npm run build -w infra3d -w infra3d-import-compose
-      - run: npm run build:demo -w @infra3d/app
+      - run: npm run build -w stratoscope-infra -w stratoscope-compose
+      - run: npm run build:demo -w stratoscope-infra-app
         env:
           BASE_PATH: /${{ github.event.repository.name }}/
       - uses: actions/upload-pages-artifact@v5

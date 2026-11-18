@@ -1,6 +1,6 @@
 name: Image
 
-# Builds the infra3d app image for amd64 and arm64 (Raspberry Pi) and pushes it to GHCR:
+# Builds the stratoscope-infra app image for amd64 and arm64 (Raspberry Pi) and pushes it to GHCR:
 # `:main` on every push to main, `:latest` and `:<version>` when the release workflow sees a new app version.
 on:
   push:
@@ -46,7 +46,7 @@ jobs:
           tags: ${{ steps.tags.outputs.tags }}
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
-            org.opencontainers.image.description=Self-hosted infra3d: 3D view of your compose stacks with health checks and root-cause hints
+            org.opencontainers.image.description=Self-hosted stratoscope-infra: 3D view of your compose stacks with health checks and root-cause hints
             org.opencontainers.image.licenses=MIT
           cache-from: type=gha
           cache-to: type=gha,mode=max

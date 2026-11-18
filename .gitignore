@@ -4,5 +4,6 @@ dist
 *.tsbuildinfo
 
 # Real infrastructure data stays local
+stratoscope.config.json
 infra3d.config.json
 **/data/local.json

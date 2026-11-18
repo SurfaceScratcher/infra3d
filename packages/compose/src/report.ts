@@ -1,4 +1,4 @@
-import type { InfraEdge, InfraNode } from 'infra3d/core';
+import type { InfraEdge, InfraNode } from 'stratoscope-infra/core';
 import { labelPairs, routedHostnames } from './build.js';
 import type { ComposeFile, ComposeService, HostInput, ImportConfig, ImportInput } from './types.js';
 
@@ -7,14 +7,16 @@ import type { ComposeFile, ComposeService, HostInput, ImportConfig, ImportInput 
 // Stack, service and network names, images and ports stay, since they explain most importer bugs.
 
 export interface ImportReport {
-  format: 'infra3d-import-report';
+  format: 'stratoscope-import-report';
   version: 1;
   input: ImportInput;
   config: ImportConfig;
   warnings: string[];
 }
 
-export const isImportReport = (v: unknown): v is ImportReport => (v as ImportReport | null)?.format === 'infra3d-import-report';
+// Reports written before the rename say `infra3d-import-report` and replay the same way
+const REPORT_FORMATS: unknown[] = ['stratoscope-import-report', 'infra3d-import-report'];
+export const isImportReport = (v: unknown): v is ImportReport => REPORT_FORMATS.includes((v as { format?: unknown } | null)?.format);
 
 const REDACTED = '<redacted>';
 // Registries and names everyone uses; keeping them makes reports easier to read
@@ -216,7 +218,7 @@ export function createImportReport(input: ImportInput, config: ImportConfig = {}
   };
 
   return {
-    format: 'infra3d-import-report',
+    format: 'stratoscope-import-report',
     version: 1,
     input: { hosts: input.hosts.map(host), ...(input.domain ? { domain: scrub(input.domain) } : {}) },
     config: anonConfig,

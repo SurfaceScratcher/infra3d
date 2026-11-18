@@ -1,5 +1,5 @@
 {
-  "name": "infra3d-monorepo",
+  "name": "stratoscope-infra-monorepo",
   "private": true,
   "type": "module",
   "workspaces": [
@@ -7,11 +7,11 @@
     "apps/*"
   ],
   "scripts": {
-    "dev": "npm run dev:demo -w @infra3d/app",
-    "build": "npm run build -w infra3d -w infra3d-import-compose && npm run build -w @infra3d/app",
+    "dev": "npm run dev:demo -w stratoscope-infra-app",
+    "build": "npm run build -w stratoscope-infra -w stratoscope-compose && npm run build -w stratoscope-infra-app",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm test --workspaces --if-present",
-    "import": "npm run build --silent -w infra3d -w infra3d-import-compose && node packages/import-compose/dist/cli.js",
+    "import": "npm run build --silent -w stratoscope-infra -w stratoscope-compose && node packages/compose/dist/cli.js",
     "changeset": "changeset",
     "record-demo": "node scripts/record-demo.mjs"
   },

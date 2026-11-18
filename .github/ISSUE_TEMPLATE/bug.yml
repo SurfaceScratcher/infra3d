@@ -20,10 +20,10 @@ body:
       label: Import report
       description: >-
         If the importer misreads your setup: click "import report" at the bottom of the app's sidebar,
-        or run `npx infra3d-import-compose <your stacks> -r report.json`. It replaces domains, IPs, host
+        or run `npx stratoscope-compose <your stacks> -r report.json`. It replaces domains, IPs, host
         names and secrets. Read it, then drag the file here.
   - type: input
     id: versions
     attributes:
       label: Versions
-      description: infra3d, react, @react-three/fiber, @react-three/drei, three, browser
+      description: stratoscope-infra, react, @react-three/fiber, @react-three/drei, three, browser

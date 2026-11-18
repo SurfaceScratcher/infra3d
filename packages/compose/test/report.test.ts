@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import type { Topology } from 'infra3d/core';
+import type { Topology } from 'stratoscope-infra/core';
 import { ansibleSource, buildTopology, createImportReport, directorySource, isImportReport, type ImportConfig, type ImportInput } from '../src/index.js';
 
 const fixtures = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures');

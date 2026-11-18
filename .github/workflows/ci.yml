@@ -19,7 +19,7 @@ jobs:
           cache: npm
       - run: npm ci
       # the app server type-checks against the built packages
-      - run: npm run build -w infra3d -w infra3d-import-compose
+      - run: npm run build -w stratoscope-infra -w stratoscope-compose
       - run: npm run typecheck
       - run: npm test
       - run: npm run build

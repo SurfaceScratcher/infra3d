@@ -1,4 +1,4 @@
-import type { Topology } from 'infra3d/core';
+import type { Topology } from 'stratoscope-infra/core';
 import type { Change, State } from './checks.js';
 import { config } from './config.js';
 

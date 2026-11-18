@@ -2,21 +2,21 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
-import { validateTopology } from 'infra3d/core';
+import { validateTopology } from 'stratoscope-infra/core';
 import { buildTopology } from './build.js';
 import { createImportReport, isImportReport } from './report.js';
 import { ansibleSource, isAnsibleRepo } from './sources/ansible.js';
 import { directorySource } from './sources/directory.js';
 import type { ImportConfig, ImportInput, Source } from './types.js';
 
-const USAGE = `Usage: infra3d-import-compose <root> [options]
-       infra3d-import-compose <report.json> [options]
+const USAGE = `Usage: stratoscope-compose <root> [options]
+       stratoscope-compose <report.json> [options]
 
-Builds an infra3d topology from Docker Compose files, or replays an import report.
+Builds a stratoscope-infra topology from Docker Compose files, or replays an import report.
 
 Options:
   -o, --out <file>       write the topology here (default: stdout)
-  -c, --config <file>    hosts, sites and special cases (default: ./infra3d.config.json if present)
+  -c, --config <file>    hosts, sites and special cases (default: ./stratoscope.config.json if present)
   -s, --source <name>    directory | ansible | auto (default: auto)
   -r, --report <file>    also write an anonymized import report for bug reports
   -h, --help             show this help
@@ -50,11 +50,11 @@ function main() {
   let sourceName: string;
   const replay = root.endsWith('.json') && fs.statSync(root).isFile() ? JSON.parse(fs.readFileSync(root, 'utf8')) : null;
   if (replay) {
-    if (!isImportReport(replay)) throw new Error(`${positionals[0]} is not an infra3d import report`);
+    if (!isImportReport(replay)) throw new Error(`${positionals[0]} is not a stratoscope-infra import report`);
     ({ input, config } = replay);
     sourceName = 'report';
   } else {
-    const configFile = values.config ?? (fs.existsSync('infra3d.config.json') ? 'infra3d.config.json' : undefined);
+    const configFile = values.config ?? ['stratoscope.config.json', 'infra3d.config.json'].find((f) => fs.existsSync(f));
     config = configFile ? JSON.parse(fs.readFileSync(configFile, 'utf8')) : {};
     sourceName = values.source === 'auto' ? (isAnsibleRepo(root) ? 'ansible' : 'directory') : values.source!;
     const source = SOURCES[sourceName];

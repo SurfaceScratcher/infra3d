@@ -1,25 +1,26 @@
 {
-  "name": "infra3d-import-compose",
+  "name": "stratoscope-compose",
   "version": "0.3.6",
-  "description": "Builds an infra3d topology from Docker Compose files (plain stack directories or an Ansible inventory).",
+  "description": "Builds a stratoscope-infra topology from Docker Compose files (plain stack directories or an Ansible inventory).",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/SurfaceScratcher/infra3d.git",
-    "directory": "packages/import-compose"
+    "url": "git+https://github.com/SurfaceScratcher/stratoscope-infra.git",
+    "directory": "packages/compose"
   },
-  "homepage": "https://github.com/SurfaceScratcher/infra3d/tree/main/packages/import-compose#readme",
-  "bugs": "https://github.com/SurfaceScratcher/infra3d/issues",
+  "homepage": "https://github.com/SurfaceScratcher/stratoscope-infra/tree/main/packages/compose#readme",
+  "bugs": "https://github.com/SurfaceScratcher/stratoscope-infra/issues",
   "type": "module",
   "keywords": [
-    "infra3d",
+    "stratoscope",
+    "stratoscope-infra",
     "docker-compose",
     "traefik",
     "ansible",
     "topology"
   ],
   "bin": {
-    "infra3d-import-compose": "./dist/cli.js"
+    "stratoscope-compose": "./dist/cli.js"
   },
   "exports": {
     ".": {
@@ -29,7 +30,7 @@
   },
   "files": [
     "dist",
-    "infra3d.config.example.json"
+    "stratoscope.config.example.json"
   ],
   "engines": {
     "node": ">=22"
@@ -40,7 +41,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "infra3d": "^0.9.0",
+    "stratoscope-infra": "^0.9.0",
     "yaml": "^2.6.0"
   },
   "devDependencies": {

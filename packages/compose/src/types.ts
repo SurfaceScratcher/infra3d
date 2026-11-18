@@ -1,4 +1,4 @@
-import type { InfraEdge, InfraNode } from 'infra3d/core';
+import type { InfraEdge, InfraNode } from 'stratoscope-infra/core';
 
 /** A compose stack as parsed from its YAML file. */
 export interface StackInput {
@@ -36,7 +36,7 @@ export interface HostConfig {
 
 /**
  * What cannot be derived from compose files: hardware, sites, uplinks and special cases.
- * See infra3d.config.example.json.
+ * See stratoscope.config.example.json.
  */
 export interface ImportConfig {
   name?: string;

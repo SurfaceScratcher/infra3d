@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="3 1 58 58">
-  <!-- infra3d: three stacked layers with a small dependency graph, SurfaceScratcher Pastell, transparent background -->
+  <!-- stratoscope-infra: three stacked layers with a small dependency graph, SurfaceScratcher Pastell, transparent background -->
   <path d="M32 31 L57 43.5 L32 56 L7 43.5 Z" fill="#8a9cee"/>
   <path d="M32 19.5 L57 32 L32 44.5 L7 32 Z" fill="#aab9f6"/>
   <path d="M32 8 L57 20.5 L32 33 L7 20.5 Z" fill="#e1e7fd"/>

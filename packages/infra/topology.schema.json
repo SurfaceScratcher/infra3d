@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://unpkg.com/infra3d/topology.schema.json",
-  "title": "infra3d topology",
+  "$id": "https://unpkg.com/stratoscope-infra/topology.schema.json",
+  "title": "stratoscope-infra topology",
   "description": "Connected data as stacked layers, infrastructure by default. Edges point from the dependent to its dependency. Cross-references (edge targets, node layers) are checked by validateTopology().",
   "type": "object",
   "required": [

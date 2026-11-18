@@ -3,11 +3,11 @@ import {
   InfraScene, InfraDiagram, toDrawio, DEFAULT_THEME, NODE_COLORS, DOWN_COLOR, UP_COLOR, STATUS_COLORS,
   analyzeHealth, checkTarget, computeHighlight, dependencyClosure, neighbors, validateTopology,
   INFRA_PROFILE, edgeLabel as profileEdgeLabel, proxyKinds, typeLabel as profileTypeLabel,
-} from 'infra3d';
-import type { CheckResult, HighlightMode, InfraDiagramHandle, InfraEdge, InfraNode, InfraSceneHandle, NodeType, Topology } from 'infra3d';
+} from 'stratoscope-infra';
+import type { CheckResult, HighlightMode, InfraDiagramHandle, InfraEdge, InfraNode, InfraSceneHandle, NodeType, Topology } from 'stratoscope-infra';
 import { clock, since, useLiveState, type LiveState } from './live';
 
-// Two modes: the static demo (GitHub Pages, `--mode demo`) and the live app served by the infra3d server.
+// Two modes: the static demo (GitHub Pages, `--mode demo`) and the live app served by the stratoscope-infra server.
 const DEMO = import.meta.env.VITE_DEMO === 'true';
 
 /** Demo data, loaded only in demo builds so that neither file ends up in the app bundle. */
@@ -20,11 +20,11 @@ async function loadDemoTopology(): Promise<Topology> {
 
 type ViewKind = '3d' | 'layers' | 'hosts';
 const VIEWS: [ViewKind, string][] = [['3d', '3D'], ['layers', 'Layers'], ['hosts', 'Hosts']];
-const VIEW_KEY = 'infra3d:view';
+const VIEW_KEY = 'stratoscope-infra:view';
 
 function loadView(): ViewKind {
   try {
-    const v = localStorage.getItem(VIEW_KEY);
+    const v = localStorage.getItem(VIEW_KEY) ?? localStorage.getItem('infra3d:view');
     if (v === '3d' || v === 'layers' || v === 'hosts') return v;
   } catch { /* storage blocked */ }
   return '3d';
@@ -38,7 +38,7 @@ function download(name: string, type: string, content: string) {
 }
 
 /** File name from the topology name, e.g. "Homelab & Cloud" -> "homelab-cloud". */
-const fileBase = (t: Topology) => (t.name ?? 'infra3d').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'infra3d';
+const fileBase = (t: Topology) => (t.name ?? 'stratoscope-infra').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'stratoscope-infra';
 
 const PROFILE = INFRA_PROFILE;
 const PROXY_KINDS = proxyKinds(PROFILE);
@@ -77,15 +77,15 @@ function Live() {
   if (state?.topology) return <Explorer topology={state.topology} live={state} busy={busy} onCheckNow={checkNow} />;
   return (
     <div className="setup">
-      <h1>infra3d</h1>
+      <h1>stratoscope-infra</h1>
       {!state && !error && <p className="muted">Connecting …</p>}
-      {error && <p className="error">Cannot reach the infra3d server: {error}</p>}
+      {error && <p className="error">Cannot reach the stratoscope-infra server: {error}</p>}
       {state && (
         <>
           <p className="error">No topology yet{state.source.error ? `: ${state.source.error}` : '.'}</p>
           <p className="muted">
-            Mount your compose stacks at <code>/stacks</code> (one folder per host, one per stack) or set <code>INFRA3D_TOPOLOGY</code> to a
-            topology file. Hosts, sites and special cases go into <code>/config/infra3d.config.json</code>.
+            Mount your compose stacks at <code>/stacks</code> (one folder per host, one per stack) or set <code>STRATOSCOPE_TOPOLOGY</code> to a
+            topology file. Hosts, sites and special cases go into <code>/config/stratoscope.config.json</code>.
           </p>
           <button className="action" onClick={checkNow} disabled={busy}>Try again</button>
         </>
@@ -156,7 +156,7 @@ function Explorer({ topology, live, busy, onCheckNow, initialBroken = [], intro 
     <div className="app">
       <aside className="panel">
         <header>
-          <h1>infra3d</h1>
+          <h1>stratoscope-infra</h1>
           <p className="muted">{topology.name} · {topology.nodes.length} nodes · {topology.edges.length} connections</p>
         </header>
 
@@ -218,7 +218,7 @@ function Explorer({ topology, live, busy, onCheckNow, initialBroken = [], intro 
             <h2>Simulated failure</h2>
             {intro && broken.join() === initialBroken.join() && (
               <p className="intro">
-                <b>{broken.map(label).join(', ')}</b> just went offline. infra3d only probes the {endpoints.length} endpoints from
+                <b>{broken.map(label).join(', ')}</b> just went offline. stratoscope-infra only probes the {endpoints.length} endpoints from
                 outside; the dependency graph narrows {topology.nodes.length} nodes down to {simulation.causes.filter((c) => c.count === simulation.causes[0]?.count).length} candidates.
               </p>
             )}
@@ -333,7 +333,7 @@ function Explorer({ topology, live, busy, onCheckNow, initialBroken = [], intro 
           <span><span className="dot" style={{ background: STATUS_COLORS.suspect }} /> suspect</span>
         </section>
         <p className="credits">
-          <a href="https://github.com/SurfaceScratcher/infra3d" target="_blank" rel="noreferrer">infra3d</a> · MIT ·{' '}
+          <a href="https://github.com/SurfaceScratcher/stratoscope-infra" target="_blank" rel="noreferrer">stratoscope-infra</a> · MIT ·{' '}
           <a href="THIRD_PARTY_LICENSES.md" target="_blank" rel="noreferrer">third-party licenses</a>
           {live?.source.kind === 'import' && (
             <>
