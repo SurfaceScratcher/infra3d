@@ -1,6 +1,6 @@
 {
   "name": "stratoscope-compose",
-  "version": "0.3.6",
+  "version": "0.4.0",
   "description": "Builds a stratoscope-infra topology from Docker Compose files (plain stack directories or an Ansible inventory).",
   "license": "MIT",
   "repository": {
@@ -41,7 +41,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "stratoscope-infra": "^0.9.0",
+    "stratoscope-infra": "^0.10.0",
     "yaml": "^2.6.0"
   },
   "devDependencies": {
