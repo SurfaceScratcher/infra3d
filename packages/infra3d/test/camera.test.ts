@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_CAMERA_ANGLE, fitCamera, sceneBox, type Box } from '../src/camera.js';
-import { computeLayout, type Vec3 } from '../src/layout.js';
+import { DEFAULT_CAMERA_ANGLE, fitCamera, sceneBox, type Box } from '../src/core.js';
+import { computeLayout, type Vec3 } from '../src/core.js';
 import { topo } from './fixture.js';
 
 const FOV = 45;

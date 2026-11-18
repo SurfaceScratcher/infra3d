@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { computeDiagramLayout, shortenLabel, DIAGRAM_LABEL_CHARS } from '../src/layout2d.js';
-import { toDrawio } from '../src/drawio.js';
+import { computeDiagramLayout, shortenLabel, DIAGRAM_LABEL_CHARS } from '../src/core.js';
+import { toDrawio } from '../src/core.js';
 import { topo } from './fixture.js';
 
 const within = (b: { x: number; y: number; width: number; height: number }, p: { x: number; y: number }) =>
@@ -109,7 +109,7 @@ describe('toDrawio', () => {
   });
 
   it('contains every node on every page and attaches edges to existing cells', () => {
-    for (const view of ['layers', 'hosts']) {
+    for (const view of ['layers', 'columns']) {
       for (const n of topo.nodes) expect(xml, `${view} ${n.id}`).toContain(`id="${view}:node:${n.id}"`);
     }
     const ids = new Set([...xml.matchAll(/ id="([^"]+)"/g)].map((m) => m[1]));
@@ -118,8 +118,8 @@ describe('toDrawio', () => {
 
   it('nests nodes in their card and group on the hosts page', () => {
     const hosts = xml.slice(xml.indexOf('name="Hosts"'));
-    expect(hosts).toMatch(/id="hosts:node:c:a:shop"[^>]*>\s*<mxCell[^>]*parent="hosts:group:host-a\/shop"/);
-    expect(hosts).toMatch(/id="hosts:node:h:a"[^>]*>\s*<mxCell[^>]*parent="hosts:card:host-a"/);
+    expect(hosts).toMatch(/id="columns:node:c:a:shop"[^>]*>\s*<mxCell[^>]*parent="columns:group:host-a\/shop"/);
+    expect(hosts).toMatch(/id="columns:node:h:a"[^>]*>\s*<mxCell[^>]*parent="columns:card:host-a"/);
   });
 
   it('leaves out edges the hosts cards already show', () => {
@@ -144,7 +144,7 @@ describe('toDrawio', () => {
 
 describe('toSvg', () => {
   it('renders every node of a view as a standalone, well-formed SVG', async () => {
-    const { toSvg } = await import('../src/svg.js');
+    const { toSvg } = await import('../src/core.js');
     for (const view of ['layers', 'hosts'] as const) {
       const svg = toSvg(topo, { view });
       expect(svg).toMatch(/^<\?xml[^>]*>\n<svg xmlns="http:\/\/www.w3.org\/2000\/svg" width="\d+" height="\d+"/);
@@ -157,7 +157,7 @@ describe('toSvg', () => {
   });
 
   it('marks failures and escapes labels', async () => {
-    const { toSvg } = await import('../src/svg.js');
+    const { toSvg } = await import('../src/core.js');
     const svg = toSvg({ ...topo, nodes: topo.nodes.map((n) => (n.id === 'site' ? { ...n, label: 'A & <B>' } : n)) }, { status: { 'e:shop': 'down' } });
     expect(svg).toContain('A &amp; &lt;B&gt;');
     expect(svg).toContain('(endpoint, down)');

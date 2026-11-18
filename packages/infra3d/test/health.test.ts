@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { analyzeHealth, checkTarget, dependencyClosure } from '../src/health.js';
-import type { CheckResult } from '../src/health.js';
+import { analyzeHealth, checkTarget, dependencyClosure } from '../src/core.js';
+import type { CheckResult } from '../src/core.js';
 import { topo } from './fixture.js';
 
 const allOk: Record<string, CheckResult> = { 'e:shop': { ok: true }, 'e:wiki': { ok: true }, 'e:git': { ok: true } };

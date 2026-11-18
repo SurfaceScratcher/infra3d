@@ -167,7 +167,8 @@ describe('a topology that carries its profile', () => {
     expect(t.nodeColors.step).toBe('#ffffff');
     expect(t.edgeColors.needs).toBe('#654321');
     expect(t.nodeColors.host).toBe(DEFAULT_THEME.nodeColors.host);
-    expect(profileColors(INFRA_PROFILE)).toEqual({ nodeColors: {}, edgeColors: {} });
+    // The infra profile brings the colours of the default theme
+    expect(profileColors(INFRA_PROFILE)).toEqual({ nodeColors: DEFAULT_THEME.nodeColors, edgeColors: DEFAULT_THEME.edgeColors });
   });
 
   it('reports the status the nodes carry', () => {
@@ -178,7 +179,7 @@ describe('a topology that carries its profile', () => {
   it('is validated', () => {
     expect(validateTopology(own)).toMatchObject({ valid: true, warnings: [] });
     expect(validateTopology({ ...ci, profile: 'infra' }).valid).toBe(true);
-    expect(validateTopology({ ...ci, profile: 'nope' }).warnings[0]).toContain('profile "nope" is not built in');
+    expect(validateTopology({ ...ci, profile: 'nope' }).warnings[0]).toContain('profile "nope" is not known here');
     const bad = validateTopology({
       ...ci,
       profile: { ...CI, anchorLayer: 'nowhere', nodeTypes: { step: { shape: 'star' } }, edgeKinds: { needs: { line: 'dotted', label: ['only one'] } } },

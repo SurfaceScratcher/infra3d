@@ -1,25 +1,29 @@
-// Framework-free part of infra3d: data model, domain profiles, validation, graph traversal,
-// layout and health analysis. Safe to import in Node or a web worker without React or three.js.
-export { SCHEMA_VERSION } from './types.js';
-export type * from './types.js';
-export { validateTopology } from './validate.js';
-export type { ValidationResult } from './validate.js';
-export { computeLayout } from './layout.js';
-export type { LayoutOptions, Layout, Vec3 } from './layout.js';
-export { fitCamera, sceneBox, DEFAULT_CAMERA_ANGLE } from './camera.js';
-export type { CameraAngle, CameraFit, FitOptions, Box } from './camera.js';
-export { traverse, computeHighlight, neighbors } from './graph.js';
-export type { Reach, Highlight } from './graph.js';
+// Framework-free part of infra3d: stratoscope's core with infrastructure as the default domain.
+// Safe to import in Node or a web worker without React or three.js.
+export {
+  fitCamera, sceneBox, DEFAULT_CAMERA_ANGLE,
+  neighbors,
+  shapeOf, nodeTypeSpec, edgeKindSpec, propagates, structuralKinds, proxyKinds, edgeLabel, typeLabel, anchorLayerOf, profileColors, reportedStatus, DEFAULT_PROFILE, NODE_SHAPES,
+  checkTarget,
+  shortenLabel, DIAGRAM_NODE_RADIUS, DIAGRAM_LABEL_CHARS,
+} from 'stratoscope/core';
+export type {
+  GraphNode, GraphEdge, GraphLayer,
+  ValidationResult, ValidateOptions,
+  LayoutOptions, Layout, Vec3,
+  CameraAngle, CameraFit, FitOptions, Box,
+  Reach, Highlight,
+  DomainProfile, NodeTypeSpec, EdgeKindSpec, NodeShape,
+  CheckResult, HealthOptions, HealthAnalysis, Cause,
+  Theme, Theme as InfraTheme,
+  DiagramLayoutOptions, DiagramLayout, DiagramBox, DiagramPoint,
+} from 'stratoscope/core';
+export * from './types.js';
 export { INFRA_PROFILE } from './infra-profile.js';
-export { shapeOf, nodeTypeSpec, edgeKindSpec, propagates, structuralKinds, proxyKinds, edgeLabel, typeLabel, resolveProfile, profileColors, reportedStatus, BUILTIN_PROFILES, NODE_SHAPES } from './profile.js';
-export type { DomainProfile, NodeTypeSpec, EdgeKindSpec, NodeShape } from './profile.js';
-export { analyzeHealth, dependencyClosure, checkTarget, STRUCTURAL_KINDS } from './health.js';
-export type { CheckResult, HealthOptions, HealthAnalysis, Cause } from './health.js';
-export { DEFAULT_THEME, resolveTheme, NODE_COLORS, EDGE_COLORS, DOWN_COLOR, UP_COLOR, STATUS_COLORS } from './theme.js';
-export type { InfraTheme } from './theme.js';
-export { computeDiagramLayout, shortenLabel, DIAGRAM_NODE_RADIUS, DIAGRAM_LABEL_CHARS } from './layout2d.js';
-export type { DiagramView, DiagramLayoutOptions, DiagramLayout, DiagramBox, DiagramPoint } from './layout2d.js';
-export { toDrawio, DRAWIO_THEME } from './drawio.js';
-export type { DrawioOptions } from './drawio.js';
-export { toSvg } from './svg.js';
-export type { SvgOptions } from './svg.js';
+export {
+  BUILTIN_PROFILES, resolveProfile, infraTopology, coreView,
+  validateTopology, traverse, computeHighlight, computeLayout, computeDiagramLayout, analyzeHealth, dependencyClosure, STRUCTURAL_KINDS,
+  toDrawio, toSvg,
+  DEFAULT_THEME, DRAWIO_THEME, resolveTheme, NODE_COLORS, EDGE_COLORS, DOWN_COLOR, UP_COLOR, STATUS_COLORS,
+} from './infra.js';
+export type { DiagramView, InfraDiagramLayoutOptions, DrawioOptions, SvgOptions } from './infra.js';

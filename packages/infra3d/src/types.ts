@@ -1,4 +1,7 @@
-import type { DomainProfile } from './profile.js';
+import type { GraphEdge, GraphLayer, GraphNode, Topology as GraphTopology } from 'stratoscope/core';
+
+export type { HighlightMode, NodeStatus } from 'stratoscope/core';
+export { SCHEMA_VERSION } from 'stratoscope/core';
 
 /** Node types with a built-in shape and colour. Any other string works too and is drawn as a box. */
 export type BuiltinNodeType = 'site' | 'device' | 'host' | 'network' | 'container' | 'endpoint';
@@ -22,57 +25,27 @@ export type BuiltinEdgeKind =
   | 'backup'; // host -> backup target (if it fails, the host keeps running)
 export type EdgeKind = BuiltinEdgeKind | (string & {});
 
-export interface InfraLayer {
-  id: string;
-  label: string;
-}
+/** A layer, bottom to top: physical, network, container, endpoint. */
+export type InfraLayer = GraphLayer;
 
-export interface InfraNode {
-  id: string;
-  label: string;
+/**
+ * A stratoscope node with the infrastructure types for editor completion. `column` is typically
+ * the host, `group` the compose stack; the role `database` is drawn as a cylinder.
+ */
+export interface InfraNode extends GraphNode {
   type: NodeType;
-  layer: string;
-  /** Layout column, typically the host. */
-  column?: string;
-  /** Group within the column, typically the compose stack. */
-  group?: string;
-  /** Free-form role; 'database' is drawn as a cylinder. */
-  role?: string;
-  /** Health check target, e.g. `https://app.example.com` or `tcp://10.0.0.5:22`. */
-  check?: string;
-  /** State reported by the source, e.g. a failed CI step. Live health checks take precedence. */
-  status?: NodeStatus;
-  /** Offset [x, z] relative to the computed position. */
-  offset?: [number, number];
-  meta?: Record<string, string | number>;
 }
 
-export interface InfraEdge {
-  from: string;
-  to: string;
+export interface InfraEdge extends GraphEdge {
   kind: EdgeKind;
-  label?: string;
 }
 
-/** Version of the topology format described by topology.schema.json. */
-export const SCHEMA_VERSION = 1;
-
-export interface Topology {
-  $schema?: string;
-  schemaVersion?: typeof SCHEMA_VERSION;
-  name?: string;
-  /**
-   * Domain of the data: the name of a built-in profile (`infra`) or a whole profile. It decides
-   * shapes, colours, wording and how failures travel. Default `infra`.
-   */
-  profile?: string | DomainProfile;
+/**
+ * A stratoscope topology. Without `profile` (or with `"profile": "infra"`) infra3d uses
+ * INFRA_PROFILE; a topology can still carry any other profile.
+ */
+export interface Topology extends GraphTopology {
   layers: InfraLayer[];
-  columns?: string[];
   nodes: InfraNode[];
   edges: InfraEdge[];
 }
-
-export type HighlightMode = 'deps' | 'impact' | 'both';
-
-/** Live state of a node, e.g. derived from health checks or reported by the source. */
-export type NodeStatus = 'ok' | 'down' | 'suspect' | 'unknown';

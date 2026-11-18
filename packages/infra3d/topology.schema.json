@@ -211,7 +211,6 @@
       "required": [
         "id",
         "label",
-        "anchorLayer",
         "nodeTypes",
         "edgeKinds"
       ],
@@ -225,7 +224,7 @@
           "minLength": 1
         },
         "anchorLayer": {
-          "description": "Layer placed on a grid per column and group; all other layers follow from it.",
+          "description": "Layer placed on a grid per column and group; all other layers follow from it. Default: the bottom layer.",
           "type": "string",
           "minLength": 1
         },
@@ -330,6 +329,10 @@
         },
         "defaultShape": {
           "$ref": "#/$defs/shape"
+        },
+        "looseColumn": {
+          "description": "Name of the column for nodes without a column. Default 'Other'.",
+          "type": "string"
         }
       },
       "additionalProperties": false

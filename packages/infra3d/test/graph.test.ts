@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeHighlight, neighbors, traverse } from '../src/graph.js';
+import { computeHighlight, neighbors, traverse } from '../src/core.js';
 import { topo } from './fixture.js';
 
 describe('traverse', () => {
