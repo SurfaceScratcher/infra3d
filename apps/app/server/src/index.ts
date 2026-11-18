@@ -6,9 +6,9 @@ import { runChecks, state } from './checks.js';
 import { config } from './config.js';
 import { notify, notifyTargets } from './notify.js';
 import { importReport, reload, source, topology } from './topology.js';
-import { DEFAULT_THEME, toDrawio, toSvg, type DiagramView, type Topology } from 'infra3d/core';
+import { DEFAULT_THEME, toDrawio, toSvg, type DiagramView, type Topology } from 'stratoscope-infra/core';
 
-// infra3d app: imports the compose stacks, probes every endpoint and serves the 3D view.
+// stratoscope-infra app: imports the compose stacks, probes every endpoint and serves the 3D view.
 
 async function cycle() {
   reload();
@@ -56,7 +56,7 @@ function serveStatic(urlPath: string, res: http.ServerResponse) {
 
 const expectedAuth = config.auth ? Buffer.from(`Basic ${Buffer.from(config.auth).toString('base64')}`) : null;
 
-/** HTTP Basic Auth when INFRA3D_AUTH is set. */
+/** HTTP Basic Auth when STRATOSCOPE_AUTH is set. */
 function authorized(req: http.IncomingMessage) {
   if (!expectedAuth) return true;
   const given = Buffer.from(req.headers.authorization ?? '');
@@ -90,7 +90,7 @@ function diagram(url: URL, res: http.ServerResponse, topo: Topology) {
     res.writeHead(200, { ...headers, 'Content-Type': 'image/svg+xml; charset=utf-8', 'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'" });
     return void res.end(toSvg(topo, { view, hiddenLayers, status, theme }));
   }
-  res.writeHead(200, { ...headers, 'Content-Type': 'application/xml; charset=utf-8', 'Content-Disposition': 'attachment; filename="infra3d.drawio"' });
+  res.writeHead(200, { ...headers, 'Content-Type': 'application/xml; charset=utf-8', 'Content-Disposition': 'attachment; filename="stratoscope-infra.drawio"' });
   res.end(toDrawio(topo, { hiddenLayers, status, theme }));
 }
 
@@ -101,13 +101,13 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url ?? '/', 'http://localhost');
   try {
     if (url.pathname === '/healthz') return json(res, { ok: true });
-    if (!authorized(req) && !embedAuthorized(url)) return void res.writeHead(401, { 'WWW-Authenticate': 'Basic realm="infra3d", charset="UTF-8"' }).end();
+    if (!authorized(req) && !embedAuthorized(url)) return void res.writeHead(401, { 'WWW-Authenticate': 'Basic realm="stratoscope-infra", charset="UTF-8"' }).end();
     if (url.pathname === '/api/state' && req.method === 'GET') return json(res, apiState());
     if (url.pathname === '/api/check' && req.method === 'POST') return (await cycle(), json(res, apiState()));
     if (url.pathname === '/api/report' && req.method === 'GET') {
       const report = importReport();
-      if (!report) return json(res, { error: 'no import report: the topology comes from INFRA3D_TOPOLOGY' }, 404);
-      res.setHeader('Content-Disposition', 'attachment; filename="infra3d-import-report.json"');
+      if (!report) return json(res, { error: 'no import report: the topology comes from STRATOSCOPE_TOPOLOGY' }, 404);
+      res.setHeader('Content-Disposition', 'attachment; filename="stratoscope-import-report.json"');
       return json(res, report);
     }
     if (DIAGRAM_PATHS.includes(url.pathname) && (req.method === 'GET' || req.method === 'HEAD')) {
@@ -125,9 +125,9 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(config.port, () => {
-  console.log(`infra3d listening on :${config.port}, ${source.kind === 'file' ? 'topology' : 'stacks'} from ${source.path}`);
-  if (config.auth && !config.auth.includes(':')) console.warn('INFRA3D_AUTH should be user:password');
-  if (!config.auth) console.log('no INFRA3D_AUTH set: the UI is open to everyone who can reach this port');
+  console.log(`stratoscope-infra listening on :${config.port}, ${source.kind === 'file' ? 'topology' : 'stacks'} from ${source.path}`);
+  if (config.auth && !config.auth.includes(':')) console.warn('STRATOSCOPE_AUTH should be user:password');
+  if (!config.auth) console.log('no STRATOSCOPE_AUTH set: the UI is open to everyone who can reach this port');
   void cycle().then(() => {
     const topo = topology();
     if (source.error) console.warn(`topology: ${source.error}`);

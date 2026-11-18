@@ -9,8 +9,8 @@
       "node"
     ],
     "paths": {
-      "infra3d/core": [
-        "../infra3d/src/core.ts"
+      "stratoscope-infra/core": [
+        "../infra/src/core.ts"
       ]
     }
   },

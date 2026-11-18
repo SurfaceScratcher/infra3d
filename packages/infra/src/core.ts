@@ -1,4 +1,4 @@
-// Framework-free part of infra3d: stratoscope's core with infrastructure as the default domain.
+// Framework-free part of stratoscope-infra: stratoscope's core with infrastructure as the default domain.
 // Safe to import in Node or a web worker without React or three.js.
 export {
   fitCamera, sceneBox, DEFAULT_CAMERA_ANGLE,

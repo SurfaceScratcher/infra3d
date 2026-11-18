@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { HealthAnalysis, Topology } from 'infra3d';
+import type { HealthAnalysis, Topology } from 'stratoscope-infra';
 
-// Shape of GET /api/state from the infra3d server (apps/app/server).
+// Shape of GET /api/state from the stratoscope-infra server (apps/app/server).
 
 export interface Check {
   target: string | null;

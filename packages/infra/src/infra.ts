@@ -1,5 +1,5 @@
 /**
- * infra3d is stratoscope with infrastructure as the default domain. Every function here hands
+ * stratoscope-infra is stratoscope with infrastructure as the default domain. Every function here hands
  * over to stratoscope, with INFRA_PROFILE where a topology names no other profile, the hosts view
  * as an alias of the columns view, and the infrastructure colours in the default themes.
  */
@@ -107,7 +107,7 @@ export const DEFAULT_THEME: Theme = core.resolveTheme({}, INFRA_PROFILE);
 /** Light theme of the draw.io and SVG exports with the colours of INFRA_PROFILE. */
 export const DRAWIO_THEME: Theme = core.resolveTheme({}, INFRA_PROFILE, core.DRAWIO_THEME);
 
-/** Merges a partial theme into `base` (default: infra3d's DEFAULT_THEME), with the profile's colours in between. */
+/** Merges a partial theme into `base` (default: stratoscope-infra's DEFAULT_THEME), with the profile's colours in between. */
 export function resolveTheme(theme: Partial<Theme> = {}, profile?: DomainProfile, base: Theme = DEFAULT_THEME): Theme {
   return core.resolveTheme(theme, profile, base);
 }

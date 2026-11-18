@@ -2,7 +2,7 @@
 
 Thanks for helping! Bug reports, importers for new data sources, layout improvements and
 docs are all welcome. For larger changes, please open an issue or start a
-[discussion](https://github.com/SurfaceScratcher/infra3d/discussions) first so we can agree on
+[discussion](https://github.com/SurfaceScratcher/stratoscope-infra/discussions) first so we can agree on
 the approach. Questions and ideas belong in Discussions, bugs in issues.
 
 ## Setup
@@ -12,7 +12,7 @@ Requires Node 22 or newer.
 ```bash
 npm install
 npm run dev          # demo at http://localhost:5173 with live reload of the library source
-npm run dev -w @infra3d/app   # live app: server on :8080 plus Vite, see apps/app/README.md
+npm run dev -w stratoscope-infra-app   # live app: server on :8080 plus Vite, see apps/app/README.md
 npm test             # vitest in all packages
 npm run typecheck
 npm run build
@@ -30,7 +30,7 @@ To reproduce an importer bug from an issue, replay the attached report:
 npm run import -- report.json -o apps/app/web/src/data/local.json
 ```
 
-`local.json` and `infra3d.config.json` are gitignored. Please never commit real hostnames,
+`local.json` and `stratoscope.config.json` are gitignored. Please never commit real hostnames,
 addresses or configs, including in test fixtures and screenshots. Use `example.com` and
 private address ranges.
 
@@ -40,7 +40,7 @@ After visible UI changes, `npm run record-demo` re-records `docs/demo.gif` from 
 ## Repository layout
 
 ```
-packages/infra3d/          the library, published as `infra3d`
+packages/infra/          the library, published as `stratoscope-infra`
   src/types.ts             topology format
   src/validate.ts          validateTopology(), mirrors topology.schema.json
   src/graph.ts             dependency / impact traversal for highlighting
@@ -48,9 +48,9 @@ packages/infra3d/          the library, published as `infra3d`
   src/health.ts            analyzeHealth(): root cause from endpoint checks
   src/theme.ts             colours and DEFAULT_THEME
   src/InfraScene.tsx       the react-three-fiber scene
-  src/core.ts              entry `infra3d/core`: everything except the scene, no React or three
+  src/core.ts              entry `stratoscope-infra/core`: everything except the scene, no React or three
   test/                    vitest suites with a small fixture topology
-packages/import-compose/   CLI `infra3d-import-compose`
+packages/compose/   CLI `stratoscope-compose`
   src/build.ts             buildTopology(): compose files → topology
   src/sources/             readers for on-disk layouts (directory, ansible)
 apps/app/                  the self-hosted app (Docker image) and the demo on GitHub Pages
@@ -81,14 +81,14 @@ Proxmox, NetBox …) is usually one small file in `src/sources/` plus fixtures.
 
 ## Pull requests
 
-- AI-assisted contributions are welcome; most of infra3d itself was written with an AI agent.
+- AI-assisted contributions are welcome; most of stratoscope-infra itself was written with an AI agent.
   You are responsible for what you submit: understand it, test it, and be ready to explain it
   in the review.
 - Keep PRs focused; one topic per PR.
 - Add or update tests for behaviour changes.
-- Run `npx changeset` if a published package or the app (`@infra3d/app`) changes and describe
+- Run `npx changeset` if a published package or the app (`stratoscope-infra-app`) changes and describe
   the change in one line. Below 1.0, breaking changes are a `minor` bump. The app's version is
-  the Docker image tag; releases of `infra3d` or `infra3d-import-compose` bump it as well.
+  the Docker image tag; releases of `stratoscope-infra` or `stratoscope-compose` bump it as well.
 - Code, comments and docs are in English. Match the style of the surrounding code.
 - Changes to the topology format need an update to `types.ts`, `topology.schema.json`,
   `validate.ts` and the README together.

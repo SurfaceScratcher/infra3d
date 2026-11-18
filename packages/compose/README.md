@@ -1,12 +1,12 @@
-# infra3d-import-compose
+# stratoscope-compose
 
-Builds an [infra3d](../infra3d) topology from Docker Compose files.
+Builds a [stratoscope-infra](../infra) topology from Docker Compose files. Formerly `infra3d-import-compose`.
 
 ```bash
-npx infra3d-import-compose <root> [-c infra3d.config.json] [-o topology.json] [-s directory|ansible]
+npx stratoscope-compose <root> [-c stratoscope.config.json] [-o topology.json] [-s directory|ansible]
 ```
 
-Without `-o` the topology goes to stdout. Without `-c`, `./infra3d.config.json` is used if present.
+Without `-o` the topology goes to stdout. Without `-c`, `./stratoscope.config.json` is used if present.
 
 ## Import reports for bug reports
 
@@ -14,7 +14,7 @@ If the importer misreads your setup, `-r report.json` writes an anonymized copy 
 which you can attach to an issue:
 
 ```bash
-npx infra3d-import-compose ~/stacks -r report.json
+npx stratoscope-compose ~/stacks -r report.json
 ```
 
 Domains, IP addresses, host names, e-mail addresses and file paths are replaced consistently
@@ -27,7 +27,7 @@ you share it** and rename anything private.
 Passing a report instead of a directory replays the import, e.g. to reproduce a bug:
 
 ```bash
-npx infra3d-import-compose report.json -o topology.json
+npx stratoscope-compose report.json -o topology.json
 ```
 
 ## Sources
@@ -61,7 +61,7 @@ Environment values and secrets are never copied into the topology.
 ## Config
 
 What compose files do not contain: hardware, sites, uplinks and special cases.
-Start from [infra3d.config.example.json](infra3d.config.example.json).
+Start from [stratoscope.config.example.json](stratoscope.config.example.json).
 
 | Key | |
 | --- | --- |
@@ -80,7 +80,7 @@ Start from [infra3d.config.example.json](infra3d.config.example.json).
 ## API
 
 ```ts
-import { buildTopology, directorySource } from 'infra3d-import-compose';
+import { buildTopology, directorySource } from 'stratoscope-compose';
 
 const topology = buildTopology(directorySource('./stacks', config), config);
 

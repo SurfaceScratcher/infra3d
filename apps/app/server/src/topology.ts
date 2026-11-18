@@ -1,6 +1,6 @@
 import fs from 'node:fs';
-import { validateTopology, type Topology } from 'infra3d/core';
-import { ansibleSource, buildTopology, createImportReport, directorySource, isAnsibleRepo, type ImportConfig, type ImportReport } from 'infra3d-import-compose';
+import { validateTopology, type Topology } from 'stratoscope-infra/core';
+import { ansibleSource, buildTopology, createImportReport, directorySource, isAnsibleRepo, type ImportConfig, type ImportReport } from 'stratoscope-compose';
 import { config } from './config.js';
 
 export interface TopologySource {
@@ -23,7 +23,7 @@ function read(): Topology {
   if (config.host) importConfig.host = config.host;
   const kind = config.source === 'auto' ? (isAnsibleRepo(config.stacksDir) ? 'ansible' : 'directory') : config.source;
   const importSource = kind === 'ansible' ? ansibleSource : kind === 'directory' ? directorySource : null;
-  if (!importSource) throw new Error(`unknown INFRA3D_SOURCE "${config.source}", expected auto, directory or ansible`);
+  if (!importSource) throw new Error(`unknown STRATOSCOPE_SOURCE "${config.source}", expected auto, directory or ansible`);
   const input = importSource(config.stacksDir, importConfig);
   // A single host is the Docker host this container runs on
   if (input.hosts.length === 1 && !importConfig.defaultAddress) importConfig.defaultAddress = config.hostAddress;

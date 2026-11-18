@@ -8,4 +8,5 @@ docs
 **/test
 # Real infrastructure data never goes into the image
 **/data/local.json
+stratoscope.config.json
 infra3d.config.json

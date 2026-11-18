@@ -2,7 +2,7 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "noEmit": true,
-    "paths": { "infra3d": ["../../packages/infra3d/src/index.ts"] }
+    "paths": { "stratoscope-infra": ["../../packages/infra/src/index.ts"] }
   },
   "include": ["web/src"]
 }

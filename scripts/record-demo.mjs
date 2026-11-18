@@ -12,9 +12,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { chromium } from 'playwright-core';
 
-const url = process.argv[2] ?? 'https://surfacescratcher.github.io/infra3d/';
+const url = process.argv[2] ?? 'https://surfacescratcher.github.io/stratoscope-infra/';
 const out = path.resolve(process.argv[3] ?? 'docs/demo.gif');
-const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'infra3d-demo-'));
+const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'stratoscope-infra-demo-'));
 const W = 1280, H = 720, FPS = 30, DT = 1000 / FPS;
 
 const browser = await chromium.launch({

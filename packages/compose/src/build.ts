@@ -1,4 +1,4 @@
-import type { EdgeKind, InfraEdge, InfraNode, Topology } from 'infra3d/core';
+import type { EdgeKind, InfraEdge, InfraNode, Topology } from 'stratoscope-infra/core';
 import type { ComposeService, ImportConfig, ImportInput } from './types.js';
 
 // Only structure is taken over: no env values, no secrets, no public IPs.

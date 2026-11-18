@@ -41,7 +41,7 @@ export interface InfraEdge extends GraphEdge {
 }
 
 /**
- * A stratoscope topology. Without `profile` (or with `"profile": "infra"`) infra3d uses
+ * A stratoscope topology. Without `profile` (or with `"profile": "infra"`) stratoscope-infra uses
  * INFRA_PROFILE; a topology can still carry any other profile.
  */
 export interface Topology extends GraphTopology {

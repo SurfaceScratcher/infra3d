@@ -2,7 +2,7 @@ import type { DomainProfile } from 'stratoscope/core';
 
 /**
  * The infrastructure domain: sites, devices and hosts at the bottom, then networks, containers
- * and the endpoints users reach. Default profile of every function and component of infra3d.
+ * and the endpoints users reach. Default profile of every function and component of stratoscope-infra.
  */
 export const INFRA_PROFILE: DomainProfile = {
   id: 'infra',

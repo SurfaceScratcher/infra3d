@@ -1,4 +1,4 @@
-import { analyzeHealth, checkTarget, type HealthAnalysis, type Topology } from 'infra3d/core';
+import { analyzeHealth, checkTarget, type HealthAnalysis, type Topology } from 'stratoscope-infra/core';
 import { config } from './config.js';
 import { probe } from './probe.js';
 

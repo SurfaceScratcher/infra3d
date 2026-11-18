@@ -1,15 +1,16 @@
-# infra3d
+# stratoscope-infra
 
 React component that shows IT infrastructure as stacked 3D layers
 (hardware → networks → containers → endpoints) you can rotate, zoom and click through,
-plus two 2D diagrams of the same topology that export to draw.io.
+plus two 2D diagrams of the same topology that export to draw.io. Formerly `infra3d`; the API is
+the same, only the package name changed.
 
-![infra3d demo: a host goes offline, four endpoints fail and the dependency graph narrows 52 nodes down to four likely causes](https://raw.githubusercontent.com/SurfaceScratcher/infra3d/main/docs/screenshot.png)
+![stratoscope-infra demo: a host goes offline, four endpoints fail and the dependency graph narrows 52 nodes down to four likely causes](https://raw.githubusercontent.com/SurfaceScratcher/stratoscope-infra/main/docs/screenshot.png)
 
-**[Live demo](https://surfacescratcher.github.io/infra3d/)** · [Repository](https://github.com/SurfaceScratcher/infra3d)
+**[Live demo](https://surfacescratcher.github.io/stratoscope-infra/)** · [Repository](https://github.com/SurfaceScratcher/stratoscope-infra)
 
 ```bash
-npm install infra3d three @react-three/fiber @react-three/drei
+npm install stratoscope-infra three @react-three/fiber @react-three/drei
 ```
 
 Requires React 19, `@react-three/fiber` 9 and `@react-three/drei` 10.
@@ -17,7 +18,7 @@ Requires React 19, `@react-three/fiber` 9 and `@react-three/drei` 10.
 ## `<InfraScene>`
 
 ```tsx
-import { InfraScene, type Topology } from 'infra3d';
+import { InfraScene, type Topology } from 'stratoscope-infra';
 
 <div style={{ height: 600 }}>
   <InfraScene
@@ -64,7 +65,7 @@ const scene = useRef<InfraSceneHandle>(null);
 
 The same topology as a flat SVG diagram, in two views:
 
-![Hosts view: one card per host with its compose stacks as boxes, a failed host's endpoints marked red](https://raw.githubusercontent.com/SurfaceScratcher/infra3d/main/docs/2d-hosts.png)
+![Hosts view: one card per host with its compose stacks as boxes, a failed host's endpoints marked red](https://raw.githubusercontent.com/SurfaceScratcher/stratoscope-infra/main/docs/2d-hosts.png)
 
 - `view="layers"`: one band per layer (endpoints, containers, networks, hardware) and one strip per
   host, so everything that belongs to a host lines up underneath it.
@@ -72,7 +73,7 @@ The same topology as a flat SVG diagram, in two views:
   and its hardware. Network memberships are implied by the cards and drawn only when highlighted.
 
 ```tsx
-import { InfraDiagram, type InfraDiagramHandle } from 'infra3d/diagram'; // React only, no three.js
+import { InfraDiagram, type InfraDiagramHandle } from 'stratoscope-infra/diagram'; // React only, no three.js
 
 const diagram = useRef<InfraDiagramHandle>(null);
 
@@ -89,7 +90,7 @@ the selection, `+`, `-` and `0` zoom. `ref.current.fitAll()` shows the whole dia
 ### draw.io export (XWiki, Confluence, …)
 
 ```ts
-import { toDrawio } from 'infra3d/core';
+import { toDrawio } from 'stratoscope-infra/core';
 
 fs.writeFileSync('infra.drawio', toDrawio(topology, { status: health?.status }));
 ```
@@ -104,9 +105,9 @@ To embed the diagram in XWiki, insert the draw.io (Diagram) macro on a page and 
 in its editor (*File → Import from → Device*). Confluence's draw.io macro works the same way.
 
 For a picture instead, `toSvg(topology, { view, status })` renders one view as a standalone SVG
-without a browser, e.g. on a server. The infra3d app serves it live at `/api/diagram.svg`:
+without a browser, e.g. on a server. The stratoscope-infra app serves it live at `/api/diagram.svg`:
 
-![Light hosts diagram rendered by toSvg, with an outage marked](https://raw.githubusercontent.com/SurfaceScratcher/infra3d/main/docs/wiki-hosts.png)
+![Light hosts diagram rendered by toSvg, with an outage marked](https://raw.githubusercontent.com/SurfaceScratcher/stratoscope-infra/main/docs/wiki-hosts.png)
 
 The layout behind both is `computeDiagramLayout(topology, { view })`, a pure function.
 
@@ -138,11 +139,11 @@ The layout behind both is `computeDiagramLayout(topology, { view })`, a pure fun
 - Optional `profile`: the domain of the data, as the name of a built-in profile (`"infra"`, the
   default) or a whole profile object, see [Domain profiles](#domain-profiles).
 
-The JSON schema ships as `infra3d/topology.schema.json`. `validateTopology()` also checks
+The JSON schema ships as `stratoscope-infra/topology.schema.json`. `validateTopology()` also checks
 cross-references the schema cannot express:
 
 ```ts
-import { validateTopology } from 'infra3d/core';
+import { validateTopology } from 'stratoscope-infra/core';
 
 const { valid, errors, warnings } = validateTopology(JSON.parse(text));
 ```
@@ -153,7 +154,7 @@ Probe only your endpoints (HTTP or TCP, from wherever you like) and let the grap
 narrow down the cause:
 
 ```ts
-import { analyzeHealth, checkTarget } from 'infra3d/core';
+import { analyzeHealth, checkTarget } from 'stratoscope-infra/core';
 
 const results = { 'e:shop.example.com': { ok: false, answered: true }, 'e:wiki.example.com': { ok: true } };
 const { status, down, suspects, causes } = analyzeHealth(topology, results);
@@ -175,14 +176,14 @@ which usually means the container is gone. Count it as a failure with `answered:
 
 ## Built on stratoscope
 
-infra3d is [stratoscope](https://github.com/SurfaceScratcher/stratoscope) with infrastructure as
+stratoscope-infra is [stratoscope](https://github.com/SurfaceScratcher/stratoscope) with infrastructure as
 the domain. Everything specific to infrastructure lives in one plain, JSON-compatible
 [domain profile](https://github.com/SurfaceScratcher/stratoscope/tree/main/packages/stratoscope#domain-profiles),
 `INFRA_PROFILE`: the node types with their shapes and colours, the edge kinds with their wording
 and line style, which edges pass a failure on, which ones are structural for the health analysis,
 and the anchor layer of the layout.
 
-What infra3d adds on top of stratoscope:
+What stratoscope-infra adds on top of stratoscope:
 
 - Every function and component uses `INFRA_PROFILE` when the topology carries no profile or names
   `"infra"`. A topology that carries another profile is drawn with that one.
@@ -204,7 +205,7 @@ legends and detail panels; `resolveProfile(topology)` returns the profile in eff
 `DEFAULT_THEME`, `resolveTheme`, and the colour constants `NODE_COLORS`, `EDGE_COLORS`,
 `STATUS_COLORS`, `DOWN_COLOR`, `UP_COLOR` for building legends, and `computeDiagramLayout`,
 `toDrawio`, `toSvg` and `DRAWIO_THEME` for the 2D views. Everything except the two components is also
-available from `infra3d/core` without React or three.js; `infra3d/diagram` adds `InfraDiagram`
+available from `stratoscope-infra/core` without React or three.js; `stratoscope-infra/diagram` adds `InfraDiagram`
 and needs only React.
 
 ## License
