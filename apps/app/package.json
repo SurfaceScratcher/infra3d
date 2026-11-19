@@ -1,7 +1,7 @@
 {
   "name": "stratoscope-infra-app",
   "private": true,
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Self-hosted stratoscope-infra: imports compose stacks, checks every endpoint and shows the 3D view with root-cause hints.",
   "type": "module",
   "scripts": {
@@ -17,7 +17,7 @@
     "build:demo": "vite build --mode demo"
   },
   "dependencies": {
-    "stratoscope-infra": "0.10.0",
+    "stratoscope-infra": "0.10.1",
     "stratoscope-compose": "0.4.0"
   },
   "devDependencies": {

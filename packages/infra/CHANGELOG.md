@@ -1,5 +1,11 @@
 # infra3d
 
+## 0.10.1
+
+### Patch Changes
+
+- cd7c5ff: Depends on stratoscope ^0.2.0, so apps that also use stratoscope-ci 0.3 get a single copy of the core (with `anchorLayers` for combined topologies).
+
 ## 0.10.0
 
 ### Minor Changes
