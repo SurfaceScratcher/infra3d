@@ -1,5 +1,12 @@
 # @infra3d/app
 
+## 0.7.1
+
+### Patch Changes
+
+- Updated dependencies [cd7c5ff]
+  - stratoscope-infra@0.10.1
+
 ## 0.7.0
 
 ### Minor Changes
